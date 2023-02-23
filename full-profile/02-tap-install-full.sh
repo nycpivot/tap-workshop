@@ -32,7 +32,7 @@ kubectl config use-context $tap_full_cluster
 
 
 #INSTALL CSI PLUGIN
-rolename=${cluster_full}-csi-driver-role
+rolename=${tap_full_cluster}-csi-driver-role
 
 aws iam detach-role-policy \
     --role-name ${rolename} \
@@ -44,19 +44,19 @@ aws iam delete-role \
 #https://docs.aws.amazon.com/eks/latest/userguide/managing-ebs-csi.html
 #INSTALL CSI DRIVER PLUGIN (REQUIRED FOR K8S 1.23)
 aws eks delete-addon \
-    --cluster-name $cluster_full \
+    --cluster-name $tap_full_cluster \
     --addon-name aws-ebs-csi-driver
 
 aws eks create-addon \
-    --cluster-name $cluster_full \
+    --cluster-name $tap_full_cluster \
     --addon-name aws-ebs-csi-driver \
     --service-account-role-arn "arn:aws:iam::${account_id}:role/${rolename}"
 
 #https://docs.aws.amazon.com/eks/latest/userguide/csi-iam-role.html
-aws eks describe-cluster --name $cluster_full --query "cluster.identity.oidc.issuer" --output text
+aws eks describe-cluster --name $tap_full_cluster --query "cluster.identity.oidc.issuer" --output text
 
 #https://docs.aws.amazon.com/eks/latest/userguide/csi-iam-role.html
-oidc_id=$(aws eks describe-cluster --name $cluster_full --query "cluster.identity.oidc.issuer" --output text | awk -F '/' '{print $5}')
+oidc_id=$(aws eks describe-cluster --name $tap_full_cluster --query "cluster.identity.oidc.issuer" --output text | awk -F '/' '{print $5}')
 echo "OIDC Id: $oidc_id"
 
 # Check if a IAM OIDC provider exists for the cluster
@@ -68,7 +68,7 @@ if [[ -z $(aws iam list-open-id-connect-providers | grep $oidc_id) ]]; then
     exit 1
     fi
 
-    eksctl utils associate-iam-oidc-provider --cluster $cluster_full --approve
+    eksctl utils associate-iam-oidc-provider --cluster $tap_full_cluster --approve
 fi
 
 rm aws-ebs-csi-driver-trust-policy.json

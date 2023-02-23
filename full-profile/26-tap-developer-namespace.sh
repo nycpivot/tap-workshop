@@ -1,14 +1,13 @@
 #!/bin/bash
 #https://docs.vmware.com/en/VMware-Tanzu-Application-Platform/1.3/tap/GUID-set-up-namespaces-aws.html
 
-subscription=nycpivot
 target_registry=tanzuapplicationplatform
 
-target_registry_password=$(az keyvault secret show --name tanzu-application-platform-secret --subscription $subscription --vault-name tanzuvault --query value --output tsv)
+target_registry_secret=$(az keyvault secret show --name tanzu-application-platform-secret --subscription nycpivot --vault-name tanzuvault --query value --output tsv)
 
 kubectl config use-context tap-full
 
-tanzu secret registry add registry-credentials --server ${target_registry}.azurecr.io --username "${target_registry}" --password "${target_registry_password}" --namespace default
+tanzu secret registry add registry-credentials --server ${target_registry}.azurecr.io --username "${target_registry}" --password "${target_registry_secret}" --namespace default
 
 #kubectl create secret docker-registry registry-credentials --docker-server="${registry_name}.azurecr.io" --docker-username="${registry_name}" --docker-password="${registry_password}" -n $namespace
 

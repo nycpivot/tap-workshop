@@ -10,7 +10,7 @@ view_domain=view.tap.nycpivot.com
 tap_version=1.4.0
 
 pivnet_password=$(az keyvault secret show --name pivnet-registry-secret --subscription nycpivot --vault-name tanzuvault --query value --output tsv)
-target_registry_password=$(az keyvault secret show --name tanzu-application-platform-secret --subscription nycpivot --vault-name tanzuvault --query value --output tsv)
+target_registry_secret=$(az keyvault secret show --name tanzu-application-platform-secret --subscription nycpivot --vault-name tanzuvault --query value --output tsv)
 github_token=$(az keyvault secret show --name github-token-nycpivot --subscription nycpivot --vault-name tanzuvault --query value --output tsv)
 
 export INSTALL_REGISTRY_HOSTNAME=registry.tanzu.vmware.com
@@ -55,7 +55,7 @@ shared:
 buildservice:
   kp_default_repository: ${target_registry}.azurecr.io/build-service
   kp_default_repository_username: $target_registry
-  kp_default_repository_password: $target_registry_password
+  kp_default_repository_password: $target_registry_secret
 supply_chain: testing_scanning
 ootb_supply_chain_testing_scanning:
   registry:

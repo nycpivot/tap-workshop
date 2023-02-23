@@ -4,7 +4,7 @@ git_catalog_repository=tanzu-application-platform
 full_domain=full.tap.nycpivot.com
 
 pivnet_password=$(az keyvault secret show --name pivnet-registry-secret --subscription $subscription --vault-name tanzuvault --query value --output tsv)
-target_registry_password=$(az keyvault secret show --name tanzu-application-platform-secret --subscription $subscription --vault-name tanzuvault --query value --output tsv)
+target_registry_secret=$(az keyvault secret show --name tanzu-application-platform-secret --subscription $subscription --vault-name tanzuvault --query value --output tsv)
 github_token=$(az keyvault secret show --name github-token-nycpivot --subscription nycpivot --vault-name tanzuvault --query value --output tsv)
 
 #export INSTALL_BUNDLE=registry.tanzu.vmware.com/tanzu-cluster-essentials/cluster-essentials-bundle@sha256:82dfaf70656b54dcba0d4def85ccae1578ff27054e7533d08320244af7fb0343
@@ -26,7 +26,7 @@ ceip_policy_disclosed: true
 buildservice:
   kp_default_repository: ${target_registry}.azurecr.io/build-service
   kp_default_repository_username: $target_registry
-  kp_default_repository_password: $target_registry_password
+  kp_default_repository_password: $target_registry_secret
 supply_chain: basic
 ootb_supply_chain_basic:
   registry:

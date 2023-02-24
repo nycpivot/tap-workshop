@@ -410,7 +410,7 @@ buildservice:
 supply_chain: basic
 ootb_supply_chain_basic:
   registry:
-    server: ${target_registry}.azurecr.io
+    server: ${aws_account_id}.dkr.ecr.${aws_region_code}.amazonaws.com
     repository: "supply-chain"
   gitops:
     ssh_secret: ""

@@ -12,6 +12,7 @@ tap_version=1.4.0
 
 target_registry=$aws_account_id.dkr.ecr.$aws_region_code.amazonaws.com
 target_repo=tap-images
+target_tbs_repo=tap-build-service
 
 #CREDS
 pivnet_pass=$(az keyvault secret show --name pivnet-registry-secret --subscription nycpivot --vault-name tanzuvault --query value --output tsv)
@@ -403,9 +404,9 @@ ceip_policy_disclosed: true
 shared:
   ingress_domain: "${full_domain}"
 buildservice:
-  kp_default_repository: ${target_registry}.azurecr.io/build-service
-  kp_default_repository_username: $target_registry
-  kp_default_repository_password: $target_registry_secret
+  kp_default_repository: ${aws_account_id}.dkr.ecr.${aws_region_code}.amazonaws.com/${target_tbs_repo}
+  # Enable the build service k8s service account to bind to the AWS IAM Role
+  kp_default_repository_aws_iam_role_arn: "arn:aws:iam::${aws_account_id}:role/${target_tbs_repo}"
 supply_chain: basic
 ootb_supply_chain_basic:
   registry:

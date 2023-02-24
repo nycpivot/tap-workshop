@@ -334,6 +334,7 @@ subjects:
     name: default
 EOF
 
+echo
 echo "DONE"
 echo
 echo http://tap-gui.${full_domain}

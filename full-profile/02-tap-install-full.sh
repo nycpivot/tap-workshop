@@ -6,10 +6,12 @@ read -p "AWS Region Code: " aws_region_code
 aws_account_id=964978768106
 tap_full_cluster=tap-full
 pivnet_user=mjames@pivotal.io
-target_registry=tanzuapplicationplatform
 git_catalog_repository=tanzu-application-platform
 full_domain=full.tap.nycpivot.com
 tap_version=1.4.0
+
+target_registry=$aws_account_id.dkr.ecr.$aws_region_code.amazonaws.com
+target_repo=tap-images
 
 #CREDS
 pivnet_pass=$(az keyvault secret show --name pivnet-registry-secret --subscription nycpivot --vault-name tanzuvault --query value --output tsv)
@@ -106,6 +108,215 @@ kubectl annotate serviceaccount ebs-csi-controller-sa \
     eks.amazonaws.com/role-arn=arn:aws:iam::${account_id}:role/${rolename}
 
 
+#RBAC FOR ECR
+oidcProvider=$(aws eks describe-cluster --name $tap_full_cluster --region $aws_region_code | jq '.cluster.identity.oidc.issuer' | tr -d '"' | sed 's/https:\/\///')
+
+rm build-service-trust-policy.json
+cat << EOF > build-service-trust-policy.json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Federated": "arn:aws:iam::${aws_account_id}:oidc-provider/${oidcProvider}"
+            },
+            "Action": "sts:AssumeRoleWithWebIdentity",
+            "Condition": {
+                "StringEquals": {
+                    "${oidcProvider}:aud": "sts.amazonaws.com"
+                },
+                "StringLike": {
+                    "${oidcProvider}:sub": [
+                        "system:serviceaccount:kpack:controller",
+                        "system:serviceaccount:build-service:dependency-updater-controller-serviceaccount"
+                    ]
+                }
+            }
+        }
+    ]
+}
+EOF
+
+rm build-service-policy.json
+cat << EOF > build-service-policy.json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Action": [
+                "ecr:DescribeRegistry",
+                "ecr:GetAuthorizationToken",
+                "ecr:GetRegistryPolicy",
+                "ecr:PutRegistryPolicy",
+                "ecr:PutReplicationConfiguration",
+                "ecr:DeleteRegistryPolicy"
+            ],
+            "Resource": "*",
+            "Effect": "Allow",
+            "Sid": "TAPEcrBuildServiceGlobal"
+        },
+        {
+            "Action": [
+                "ecr:DescribeImages",
+                "ecr:ListImages",
+                "ecr:BatchCheckLayerAvailability",
+                "ecr:BatchGetImage",
+                "ecr:BatchGetRepositoryScanningConfiguration",
+                "ecr:DescribeImageReplicationStatus",
+                "ecr:DescribeImageScanFindings",
+                "ecr:DescribeRepositories",
+                "ecr:GetDownloadUrlForLayer",
+                "ecr:GetLifecyclePolicy",
+                "ecr:GetLifecyclePolicyPreview",
+                "ecr:GetRegistryScanningConfiguration",
+                "ecr:GetRepositoryPolicy",
+                "ecr:ListTagsForResource",
+                "ecr:TagResource",
+                "ecr:UntagResource",
+                "ecr:BatchDeleteImage",
+                "ecr:BatchImportUpstreamImage",
+                "ecr:CompleteLayerUpload",
+                "ecr:CreatePullThroughCacheRule",
+                "ecr:CreateRepository",
+                "ecr:DeleteLifecyclePolicy",
+                "ecr:DeletePullThroughCacheRule",
+                "ecr:DeleteRepository",
+                "ecr:InitiateLayerUpload",
+                "ecr:PutImage",
+                "ecr:PutImageScanningConfiguration",
+                "ecr:PutImageTagMutability",
+                "ecr:PutLifecyclePolicy",
+                "ecr:PutRegistryScanningConfiguration",
+                "ecr:ReplicateImage",
+                "ecr:StartImageScan",
+                "ecr:StartLifecyclePolicyPreview",
+                "ecr:UploadLayerPart",
+                "ecr:DeleteRepositoryPolicy",
+                "ecr:SetRepositoryPolicy"
+            ],
+            "Resource": [
+                "arn:aws:ecr:${aws_region_code}:${aws_account_id}:repository/tap-build-service",
+                "arn:aws:ecr:${aws_region_code}:${aws_account_id}:repository/tap-images"
+            ],
+            "Effect": "Allow",
+            "Sid": "TAPEcrBuildServiceScoped"
+        }
+    ]
+}
+EOF
+
+rm workload-trust-policy.json
+cat << EOF > workload-trust-policy.json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Federated": "arn:aws:iam::${aws_account_id}:oidc-provider/${oidcProvider}"
+            },
+            "Action": "sts:AssumeRoleWithWebIdentity",
+            "Condition": {
+                "StringEquals": {
+                    "${oidcProvider}:sub": "system:serviceaccount:default:default",
+                    "${oidcProvider}:aud": "sts.amazonaws.com"
+                }
+            }
+        }
+    ]
+}
+EOF
+
+rm workload-policy.json
+cat << EOF > workload-policy.json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Action": [
+                "ecr:DescribeRegistry",
+                "ecr:GetAuthorizationToken",
+                "ecr:GetRegistryPolicy",
+                "ecr:PutRegistryPolicy",
+                "ecr:PutReplicationConfiguration",
+                "ecr:DeleteRegistryPolicy"
+            ],
+            "Resource": "*",
+            "Effect": "Allow",
+            "Sid": "TAPEcrWorkloadGlobal"
+        },
+        {
+            "Action": [
+                "ecr:DescribeImages",
+                "ecr:ListImages",
+                "ecr:BatchCheckLayerAvailability",
+                "ecr:BatchGetImage",
+                "ecr:BatchGetRepositoryScanningConfiguration",
+                "ecr:DescribeImageReplicationStatus",
+                "ecr:DescribeImageScanFindings",
+                "ecr:DescribeRepositories",
+                "ecr:GetDownloadUrlForLayer",
+                "ecr:GetLifecyclePolicy",
+                "ecr:GetLifecyclePolicyPreview",
+                "ecr:GetRegistryScanningConfiguration",
+                "ecr:GetRepositoryPolicy",
+                "ecr:ListTagsForResource",
+                "ecr:TagResource",
+                "ecr:UntagResource",
+                "ecr:BatchDeleteImage",
+                "ecr:BatchImportUpstreamImage",
+                "ecr:CompleteLayerUpload",
+                "ecr:CreatePullThroughCacheRule",
+                "ecr:CreateRepository",
+                "ecr:DeleteLifecyclePolicy",
+                "ecr:DeletePullThroughCacheRule",
+                "ecr:DeleteRepository",
+                "ecr:InitiateLayerUpload",
+                "ecr:PutImage",
+                "ecr:PutImageScanningConfiguration",
+                "ecr:PutImageTagMutability",
+                "ecr:PutLifecyclePolicy",
+                "ecr:PutRegistryScanningConfiguration",
+                "ecr:ReplicateImage",
+                "ecr:StartImageScan",
+                "ecr:StartLifecyclePolicyPreview",
+                "ecr:UploadLayerPart",
+                "ecr:DeleteRepositoryPolicy",
+                "ecr:SetRepositoryPolicy"
+            ],
+            "Resource": [
+                "arn:aws:ecr:${aws_region_code}:${aws_account_id}:repository/tap-build-service",
+                "arn:aws:ecr:${aws_region_code}:${aws_account_id}:repository/tanzu-application-platform/tanzu-java-web-app",
+                "arn:aws:ecr:${aws_region_code}:${aws_account_id}:repository/tanzu-application-platform/tanzu-java-web-app-bundle",
+                "arn:aws:ecr:${aws_region_code}:${aws_account_id}:repository/tanzu-application-platform",
+                "arn:aws:ecr:${aws_region_code}:${aws_account_id}:repository/tanzu-application-platform/*"
+            ],
+            "Effect": "Allow",
+            "Sid": "TAPEcrWorkloadScoped"
+        }
+    ]
+}
+EOF
+
+aws iam delete-role-policy --role-name tap-build-service --policy-name tapBuildServicePolicy
+aws iam delete-role-policy --role-name tap-workload --policy-name tapWorkload
+
+aws iam delete-role --role-name tap-build-service
+aws iam delete-role --role-name tap-workload
+
+# Create the Build Service Role
+aws iam create-role --role-name tap-build-service --assume-role-policy-document file://build-service-trust-policy.json
+# Attach the Policy to the Build Role
+aws iam put-role-policy --role-name tap-build-service --policy-name tapBuildServicePolicy --policy-document file://build-service-policy.json
+
+# Create the Workload Role
+aws iam create-role --role-name tap-workload --assume-role-policy-document file://workload-trust-policy.json
+# Attach the Policy to the Workload Role
+aws iam put-role-policy --role-name tap-workload --policy-name tapWorkload --policy-document file://workload-policy.json
+
+
+
 #TANZU PREREQS
 rm -rf $HOME/tanzu
 mkdir $HOME/tanzu
@@ -156,28 +367,15 @@ cd $HOME
 docker login registry.tanzu.vmware.com -u $pivnet_user -p $pivnet_pass
 
 
-#TBS REGISTRY
-docker login ${target_registry}.azurecr.io -u $target_registry -p $target_registry_secret
+#ECR REGISTRIES AND TAP PACKAGES
+aws ecr get-login-password --region $aws_region_code | docker login --username AWS --password-stdin $target_registry
 
-export INSTALL_REGISTRY_HOSTNAME=${target_registry}.azurecr.io
-export INSTALL_REGISTRY_USERNAME=$target_registry
-export INSTALL_REGISTRY_PASSWORD=$target_registry_secret
-export TARGET_REPOSITORY=build-service
-export TAP_VERSION=1.4.0
+imgpkg copy --concurrency 1 -b registry.tanzu.vmware.com/tanzu-application-platform/tap-packages:${tap_version} --to-repo ${target_registry}/${target_repo}
 
-imgpkg copy -b registry.tanzu.vmware.com/tanzu-application-platform/tap-packages:${TAP_VERSION} --to-repo ${INSTALL_REGISTRY_HOSTNAME}/${TARGET_REPOSITORY}/tap-packages
-
-
-#TAP-INSTALL-FULL
 kubectl create ns tap-install
 
-tanzu secret registry add tap-registry \
-  --username ${INSTALL_REGISTRY_USERNAME} --password ${INSTALL_REGISTRY_PASSWORD} \
-  --server ${INSTALL_REGISTRY_HOSTNAME} \
-  --export-to-all-namespaces --yes --namespace tap-install
-
 tanzu package repository add tanzu-tap-repository \
-  --url ${INSTALL_REGISTRY_HOSTNAME}/${TARGET_REPOSITORY}/tap-packages:$TAP_VERSION \
+  --url ${target_registry}/${target_repo}:$tap_version \
   --namespace tap-install
 
 sleep 30
@@ -189,6 +387,7 @@ tanzu package available list --namespace tap-install
 sleep 5
 
 tanzu package available list tap.tanzu.vmware.com --namespace tap-install
+sleep 5
 
 
 #TAP INSTALL FULL

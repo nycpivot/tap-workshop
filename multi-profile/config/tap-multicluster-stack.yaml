@@ -1,4 +1,4 @@
-Description: "Custom VPC for TAP installation"
+Description: "Custom VPC for TAP multi-profile installation"
 Resources:
   VPC:
     Type: AWS::EC2::VPC

@@ -1,12 +1,20 @@
 #!/bin/bash
 
-read -p "AWS Account Id: " aws_account_id
-read -p "AWS Region Code: " aws_region_code
+read -p "AWS Account Id (9649''''''''): " aws_account_id
+read -p "AWS Region Code (us-west-1): " aws_region_code
 
-aws_account_id=964978768106
+if [[ -z $aws_account_id ]]
+then
+	aws_account_id=964978768106
+fi
+
+if [[ -z $aws_region_code ]]
+then
+	aws_region_code=us-west-1
+fi
+
 tap_full_cluster=tap-full
 pivnet_user=mjames@pivotal.io
-git_catalog_repository=tanzu-application-platform
 full_domain=full.tap.nycpivot.com
 tap_version=1.4.0
 
@@ -14,15 +22,22 @@ target_registry=$aws_account_id.dkr.ecr.$aws_region_code.amazonaws.com
 target_repo=tap-images
 target_tbs_repo=tap-build-service
 
-#CREDS
-pivnet_pass=$(az keyvault secret show --name pivnet-registry-secret --subscription nycpivot --vault-name tanzuvault --query value --output tsv)
-refresh_token=$(az keyvault secret show --name pivnet-api-refresh-token --subscription nycpivot --vault-name tanzuvault --query value --output tsv)
+cli_filename=tanzu-framework-linux-amd64-v0.25.4.1.tar
+essentials_filename=tanzu-cluster-essentials-linux-amd64-1.4.0.tgz
+export TANZU_CLI_NO_INIT=true
+export VERSION=v0.25.4
+
+#SECRETS
+pivnet_pass=$(aws secretsmanager get-secret-value --secret-id tap | jq -r .SecretString | jq -r .\"pivnet-registry-secret\")
+refresh_token=$(aws secretsmanager get-secret-value --secret-id tap | jq -r .SecretString | jq -r .\"tanzu-application-platform-secret\")
+target_registry_secret=$(aws secretsmanager get-secret-value --secret-id tap | jq -r .SecretString | jq -r .\"tanzu-application-platform-secret\")
+
 token=$(curl -X POST https://network.pivotal.io/api/v2/authentication/access_tokens -d '{"refresh_token":"'${refresh_token}'"}')
 access_token=$(echo ${token} | jq -r .access_token)
 
 curl -i -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer ${access_token}" -X GET https://network.pivotal.io/api/v2/authentication
 
-target_registry_secret=$(az keyvault secret show --name tanzu-application-platform-secret --subscription nycpivot --vault-name tanzuvault --query value --output tsv)
+
 
 #UPDATE KUBECONFIG
 arn=arn:aws:eks:${aws_region_code}:${aws_account_id}:cluster
@@ -37,30 +52,30 @@ kubectl config use-context $tap_full_cluster
 #INSTALL CSI PLUGIN
 rolename=${tap_full_cluster}-csi-driver-role
 
-aws iam detach-role-policy \
-    --role-name ${rolename} \
-    --policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy
+#this is an AWS Managed policy - it can't be deleted
+#aws iam detach-role-policy \
+#    --role-name ${rolename} \
+#    --policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy
     
-aws iam delete-role \
-    --role-name ${rolename}
+aws iam delete-role --role-name ${rolename}
 
 #https://docs.aws.amazon.com/eks/latest/userguide/managing-ebs-csi.html
 #INSTALL CSI DRIVER PLUGIN (REQUIRED FOR K8S 1.23)
-aws eks delete-addon \
-    --cluster-name $tap_full_cluster \
-    --addon-name aws-ebs-csi-driver
+#aws eks delete-addon \
+#    --cluster-name $tap_full_cluster \
+#    --addon-name aws-ebs-csi-driver
 
 aws eks create-addon \
     --cluster-name $tap_full_cluster \
     --addon-name aws-ebs-csi-driver \
-    --service-account-role-arn "arn:aws:iam::${account_id}:role/${rolename}"
+    --service-account-role-arn "arn:aws:iam::${aws_account_id}:role/${rolename}"
 
 #https://docs.aws.amazon.com/eks/latest/userguide/csi-iam-role.html
 aws eks describe-cluster --name $tap_full_cluster --query "cluster.identity.oidc.issuer" --output text
 
 #https://docs.aws.amazon.com/eks/latest/userguide/csi-iam-role.html
 oidc_id=$(aws eks describe-cluster --name $tap_full_cluster --query "cluster.identity.oidc.issuer" --output text | awk -F '/' '{print $5}')
-echo "OIDC Id: $oidc_id"
+#echo "OIDC Id: $oidc_id"
 
 # Check if a IAM OIDC provider exists for the cluster
 # https://docs.aws.amazon.com/eks/latest/userguide/enable-iam-roles-for-service-accounts.html
@@ -74,7 +89,6 @@ if [[ -z $(aws iam list-open-id-connect-providers | grep $oidc_id) ]]; then
     eksctl utils associate-iam-oidc-provider --cluster $tap_full_cluster --approve
 fi
 
-rm aws-ebs-csi-driver-trust-policy.json
 cat <<EOF | tee aws-ebs-csi-driver-trust-policy.json
 {
   "Version": "2012-10-17",
@@ -82,7 +96,7 @@ cat <<EOF | tee aws-ebs-csi-driver-trust-policy.json
     {
       "Effect": "Allow",
       "Principal": {
-        "Federated": "arn:aws:iam::${account_id}:oidc-provider/oidc.eks.${aws_region_code}.amazonaws.com/id/${oidc_id}"
+        "Federated": "arn:aws:iam::${aws_account_id}:oidc-provider/oidc.eks.${aws_region_code}.amazonaws.com/id/${oidc_id}"
       },
       "Action": "sts:AssumeRoleWithWebIdentity",
       "Condition": {
@@ -106,13 +120,14 @@ aws iam attach-role-policy \
   
 kubectl annotate serviceaccount ebs-csi-controller-sa \
     -n kube-system --overwrite \
-    eks.amazonaws.com/role-arn=arn:aws:iam::${account_id}:role/${rolename}
+    eks.amazonaws.com/role-arn=arn:aws:iam::${aws_account_id}:role/${rolename}
+
+rm aws-ebs-csi-driver-trust-policy.json
 
 
 #RBAC FOR ECR
 oidcProvider=$(aws eks describe-cluster --name $tap_full_cluster --region $aws_region_code | jq '.cluster.identity.oidc.issuer' | tr -d '"' | sed 's/https:\/\///')
 
-rm build-service-trust-policy.json
 cat << EOF > build-service-trust-policy.json
 {
     "Version": "2012-10-17",
@@ -139,7 +154,6 @@ cat << EOF > build-service-trust-policy.json
 }
 EOF
 
-rm build-service-policy.json
 cat << EOF > build-service-policy.json
 {
     "Version": "2012-10-17",
@@ -207,7 +221,6 @@ cat << EOF > build-service-policy.json
 }
 EOF
 
-rm workload-trust-policy.json
 cat << EOF > workload-trust-policy.json
 {
     "Version": "2012-10-17",
@@ -229,7 +242,6 @@ cat << EOF > workload-trust-policy.json
 }
 EOF
 
-rm workload-policy.json
 cat << EOF > workload-policy.json
 {
     "Version": "2012-10-17",
@@ -316,29 +328,27 @@ aws iam create-role --role-name tap-workload --assume-role-policy-document file:
 # Attach the Policy to the Workload Role
 aws iam put-role-policy --role-name tap-workload --policy-name tapWorkload --policy-document file://workload-policy.json
 
+rm build-service-trust-policy.json
+rm build-service-policy.json
+rm workload-trust-policy.json
+rm workload-policy.json
 
 
 #TANZU PREREQS
 rm -rf $HOME/tanzu
 mkdir $HOME/tanzu
 
-cli_filename=tanzu-framework-linux-amd64-v0.25.4.1.tar
-
-rm $HOME/tanzu/${cli_filename}
 wget https://network.tanzu.vmware.com/api/v2/products/tanzu-application-platform/releases/1239018/product_files/1404618/download --header="Authorization: Bearer ${access_token}" -O $HOME/tanzu/${cli_filename}
 tar -xvf $HOME/tanzu/${cli_filename} -C $HOME/tanzu
 
-export TANZU_CLI_NO_INIT=true
-export VERSION=v0.25.4
 cd tanzu
 
 sudo install cli/core/$VERSION/tanzu-core-linux_amd64 /usr/local/bin/tanzu
 
 tanzu version
-sleep 5
 
 tanzu plugin install --local cli all
-tanzu plugin list
+#tanzu plugin list
 
 cd $HOME
 
@@ -346,9 +356,6 @@ cd $HOME
 rm -rf $HOME/tanzu-cluster-essentials
 mkdir $HOME/tanzu-cluster-essentials
 
-essentials_filename=tanzu-cluster-essentials-linux-amd64-1.4.0.tgz
-
-rm $HOME/tanzu-cluster-essentials/${essentials_filename}
 wget https://network.tanzu.vmware.com/api/v2/products/tanzu-cluster-essentials/releases/1238179/product_files/1407185/download --header="Authorization: Bearer ${access_token}" -O $HOME/tanzu-cluster-essentials/${essentials_filename}
 tar -xvf $HOME/tanzu-cluster-essentials/${essentials_filename} -C $HOME/tanzu-cluster-essentials
 
@@ -367,31 +374,38 @@ cd $HOME
 
 docker login registry.tanzu.vmware.com -u $pivnet_user -p $pivnet_pass
 
+rm $HOME/tanzu/${cli_filename}
+rm $HOME/tanzu-cluster-essentials/${essentials_filename}
 
-#ECR REGISTRIES AND TAP PACKAGES
+
+#IMPORT TAP PACKAGES
 aws ecr get-login-password --region $aws_region_code | docker login --username AWS --password-stdin $target_registry
 
 imgpkg copy --concurrency 1 -b registry.tanzu.vmware.com/tanzu-application-platform/tap-packages:${tap_version} --to-repo ${target_registry}/${target_repo}
 
 kubectl create ns tap-install
 
+kubectl delete secret ecr-creds -n tap-install
+ecr_token=$(aws ecr get-login-password --region ${aws_region_code})
+kubectl create secret docker-registry ecr-creds --docker-server=$target_registry --docker-username=AWS --docker-password=$ecr_token -n tap-install
+
 tanzu package repository add tanzu-tap-repository \
   --url ${target_registry}/${target_repo}:$tap_version \
   --namespace tap-install
 
-sleep 30
+#sleep 30
 
 tanzu package repository get tanzu-tap-repository --namespace tap-install
-sleep 5
+#sleep 5
 
 tanzu package available list --namespace tap-install
-sleep 5
+#sleep 5
 
 tanzu package available list tap.tanzu.vmware.com --namespace tap-install
-sleep 5
+#sleep 5
 
 
-#TAP INSTALL FULL
+#INSTALL FULL TAP PROFILE
 export INSTALL_REGISTRY_HOSTNAME=registry.tanzu.vmware.com
 export INSTALL_REGISTRY_USERNAME=mjames@pivotal.io
 export INSTALL_REGISTRY_PASSWORD=$pivnet_pass
@@ -453,6 +467,7 @@ tanzu package install tap -p tap.tanzu.vmware.com -v $tap_version --values-file 
 tanzu package installed get tap -n tap-install
 tanzu package installed list -A
 
+# CONFIGURE DNS NAME WITH ELB IP
 kubectl get svc -n tanzu-system-ingress
 
 read -p "Tanzu System Ingress IP: " external_ip
@@ -486,7 +501,7 @@ aws route53 change-resource-record-sets --hosted-zone-id Z0294944QU6R4X4A718M --
 
 
 #DEVELOPER NAMESPACE
-tanzu secret registry add registry-credentials --server ${target_registry}.azurecr.io --username "${target_registry}" --password "${target_registry_secret}" --namespace default
+tanzu secret registry add registry-credentials --server ${target_registry} --username "AWS" --password "${target_registry}" --namespace default
 
 cat <<EOF | kubectl -n default apply -f -
 apiVersion: v1

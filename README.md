@@ -9,6 +9,7 @@ This repository offers application developers and operators practical examples f
 * Kubernetes cluster (minimum version 1.23)
 * TAP (version 1.4 or higher)
 * Tanzu CLI and plugins
+* Domain name, subdomains with wildcard
 
 ## Getting Started
 
@@ -18,3 +19,5 @@ Depending on the environment TAP will be deployed to, these different components
 
 * [Single Cluster](full-profile)
 * [Multi Cluster](multi-profile)
+
+Navigate to either of these links to begin installation steps.

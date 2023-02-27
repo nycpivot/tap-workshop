@@ -4,19 +4,19 @@ A full profile will install all TAP components on a single cluster. Follow these
 
 ## Existing Cluster
 
-To install TAP on an existing cluster, begin with 01-tap-install-full-any.sh. This will install Tanzu and TAP on your cluster.
+To install TAP on an existing cluster, begin with 01-one-click-full-any.sh. This will install Tanzu and TAP on your cluster.
 
 ## New Cluster
 
-To start from scratch, run 00-aws-prereqs.sh first to create all the necessary AWS resources, including a VPC, subnets, and an EKS cluster. Then run 01-tap-install-full-eks.sh to install Tanzu and TAP.
+To start from scratch, run 00-aws-prereqs.sh first to create all the necessary AWS resources, including a VPC, subnets, and an EKS cluster. Then run 01-one-click-full-eks.sh to install Tanzu and TAP.
 
 ## Explanation of Scripts
 
 The following list of scripts briefly summarizes the purpose of each script.
 
 * 00-aws-prereqs.sh, runs the CloudFormation template in the config folder.
-* 01-tap-install-full-any.sh, assumes an existing cluster and begins by installing Tanzu and TAP.
-* 01-tap-install-full-eks.sh, contains all the steps with the only prerequisite of having an existing EKS cluster. See below for detailed steps.
+* 01-one-click-full-any.sh, assumes an existing cluster and begins by installing Tanzu and TAP.
+* 01-one-click-full-eks.sh, contains all the steps with the only prerequisite of having an existing EKS cluster. See below for detailed steps.
 
 ### Secrets
 

@@ -16,7 +16,7 @@ fi
 tap_full_cluster=tap-full
 pivnet_user=mjames@pivotal.io
 full_domain=full.tap.nycpivot.com
-tap_version=1.4.0
+tap_version=1.4.1
 
 target_registry=$aws_account_id.dkr.ecr.$aws_region_code.amazonaws.com
 target_repo=tap-images
@@ -29,7 +29,7 @@ export VERSION=v0.25.4
 
 #SECRETS
 pivnet_pass=$(aws secretsmanager get-secret-value --secret-id tap | jq -r .SecretString | jq -r .\"pivnet-registry-secret\")
-refresh_token=$(aws secretsmanager get-secret-value --secret-id tap | jq -r .SecretString | jq -r .\"tanzu-application-platform-secret\")
+refresh_token=$(aws secretsmanager get-secret-value --secret-id tap | jq -r .SecretString | jq -r .\"pivnet-api-refresh-token\")
 target_registry_secret=$(aws secretsmanager get-secret-value --secret-id tap | jq -r .SecretString | jq -r .\"tanzu-application-platform-secret\")
 
 token=$(curl -X POST https://network.pivotal.io/api/v2/authentication/access_tokens -d '{"refresh_token":"'${refresh_token}'"}')
@@ -37,7 +37,7 @@ access_token=$(echo ${token} | jq -r .access_token)
 
 curl -i -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer ${access_token}" -X GET https://network.pivotal.io/api/v2/authentication
 
-
+#eksctl create cluster --name $tap_full_cluster --managed --region $aws_region_code --instance-types t3.xlarge --version 1.23 --with-oidc -N 5
 
 #UPDATE KUBECONFIG
 arn=arn:aws:eks:${aws_region_code}:${aws_account_id}:cluster
@@ -52,10 +52,9 @@ kubectl config use-context $tap_full_cluster
 #INSTALL CSI PLUGIN
 rolename=${tap_full_cluster}-csi-driver-role
 
-#this is an AWS Managed policy - it can't be deleted
-#aws iam detach-role-policy \
-#    --role-name ${rolename} \
-#    --policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy
+aws iam detach-role-policy \
+    --role-name ${rolename} \
+    --policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy
     
 aws iam delete-role --role-name ${rolename}
 
@@ -124,6 +123,10 @@ kubectl annotate serviceaccount ebs-csi-controller-sa \
 
 rm aws-ebs-csi-driver-trust-policy.json
 
+
+#CREATE ECRs
+#aws ecr create-repository --repository-name tap-images --region $aws_region_code
+#aws ecr create-repository --repository-name tap-build-service --region $aws_region_code
 
 #RBAC FOR ECR
 oidcProvider=$(aws eks describe-cluster --name $tap_full_cluster --region $aws_region_code | jq '.cluster.identity.oidc.issuer' | tr -d '"' | sed 's/https:\/\///')
@@ -338,7 +341,7 @@ rm workload-policy.json
 rm -rf $HOME/tanzu
 mkdir $HOME/tanzu
 
-wget https://network.tanzu.vmware.com/api/v2/products/tanzu-application-platform/releases/1239018/product_files/1404618/download --header="Authorization: Bearer ${access_token}" -O $HOME/tanzu/${cli_filename}
+wget https://network.tanzu.vmware.com/api/v2/products/tanzu-application-platform/releases/1250091/product_files/1423948/download --header="Authorization: Bearer ${access_token}" -O $HOME/tanzu/${cli_filename}
 tar -xvf $HOME/tanzu/${cli_filename} -C $HOME/tanzu
 
 cd tanzu
@@ -356,10 +359,10 @@ cd $HOME
 rm -rf $HOME/tanzu-cluster-essentials
 mkdir $HOME/tanzu-cluster-essentials
 
-wget https://network.tanzu.vmware.com/api/v2/products/tanzu-cluster-essentials/releases/1238179/product_files/1407185/download --header="Authorization: Bearer ${access_token}" -O $HOME/tanzu-cluster-essentials/${essentials_filename}
+wget https://network.tanzu.vmware.com/api/v2/products/tanzu-cluster-essentials/releases/1249982/product_files/1423994/download --header="Authorization: Bearer ${access_token}" -O $HOME/tanzu-cluster-essentials/${essentials_filename}
 tar -xvf $HOME/tanzu-cluster-essentials/${essentials_filename} -C $HOME/tanzu-cluster-essentials
 
-export INSTALL_BUNDLE=registry.tanzu.vmware.com/tanzu-cluster-essentials/cluster-essentials-bundle@sha256:5fd527dda8af0e4c25c427e5659559a2ff9b283f6655a335ae08357ff63b8e7f
+export INSTALL_BUNDLE=registry.tanzu.vmware.com/tanzu-cluster-essentials/cluster-essentials-bundle@sha256:54bf611711923dccd7c7f10603c846782b90644d48f1cb570b43a082d18e23b9
 export INSTALL_REGISTRY_HOSTNAME=registry.tanzu.vmware.com
 export INSTALL_REGISTRY_USERNAME=$pivnet_user
 export INSTALL_REGISTRY_PASSWORD=$pivnet_pass

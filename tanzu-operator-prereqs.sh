@@ -1,8 +1,12 @@
 #!/bin/bash
 
+read -p "AWS Account Id: " aws_account_id
 read -p "AWS Access Key Id: " aws_access_key_id
 read -p "AWS Secret Access Key: " aws_secret_access_key
 read -p "AWS Default Region: " aws_region_code
+read -p "Pivnet Username: " pivnet_username
+read -p "Pivnet Password: " pivnet_password
+read -p "Pivnet API Token: " pivnet_token
 
 sudo apt update
 yes | sudo apt upgrade
@@ -60,6 +64,23 @@ rm kubectl-linux-v1.22.5+vmware.1
 kubectl version
 
 git clone https://github.com/nycpivot/tap-workshop
+
+echo
+echo export AWS_ACCOUNT_ID=$aws_account_id >> .bashrc
+echo
+echo export AWS_REGION_CODE=$aws_region_code >> .bashrc
+echo
+echo export PIVNET_USERNAME=$pivnet_username >> .bashrc
+
+rm secrets.json
+cat <<EOF | tee secrets.json
+{
+    "pivnet_password": "${pivnet_password}",
+    "pivnet_token": "${pivnet_token}"
+}
+EOF
+
+aws secretsmanager create-secret --name $pivnet_username --secret-string file://secrets.json
 
 echo
 echo "***REBOOTING***"

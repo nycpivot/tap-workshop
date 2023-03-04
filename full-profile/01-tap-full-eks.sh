@@ -1,24 +1,5 @@
 #!/bin/bash
 
-read -p "AWS Account Id: " aws_account_id
-read -p "AWS Region Code: " aws_region_code
-read -p "Pivnet User: " pivnet_user
-
-if [[ -z $aws_account_id ]]
-then
-	aws_account_id=964978768106
-fi
-
-if [[ -z $aws_region_code ]]
-then
-	aws_region_code=us-west-1
-fi
-
-if [[ -z $pivnet_user ]]
-then
-	pivnet_user=mjames@pivotal.io
-fi
-
 tap_full_cluster=tap-full
 full_domain=full.tap.nycpivot.com
 tap_version=1.4.1
@@ -33,11 +14,9 @@ export TANZU_CLI_NO_INIT=true
 export VERSION=v0.25.4
 
 #SECRETS
-pivnet_pass=$(aws secretsmanager get-secret-value --secret-id tap | jq -r .SecretString | jq -r .\"pivnet-registry-secret\")
-refresh_token=$(aws secretsmanager get-secret-value --secret-id tap | jq -r .SecretString | jq -r .\"pivnet-api-refresh-token\")
-target_registry_secret=$(aws secretsmanager get-secret-value --secret-id tap | jq -r .SecretString | jq -r .\"tanzu-application-platform-secret\")
-
-token=$(curl -X POST https://network.pivotal.io/api/v2/authentication/access_tokens -d '{"refresh_token":"'${refresh_token}'"}')
+pivnet_pass=$(aws secretsmanager get-secret-value --secret-id $PIVNET_USERNAME | jq -r .SecretString | jq -r .\"pivnet_pass\")
+pivnet_token=$(aws secretsmanager get-secret-value --secret-id $PIVNET_USERNAME | jq -r .SecretString | jq -r .\"pivnet_token\")
+token=$(curl -X POST https://network.pivotal.io/api/v2/authentication/access_tokens -d '{"refresh_token":"'${pivnet_token}'"}')
 access_token=$(echo ${token} | jq -r .access_token)
 
 curl -i -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer ${access_token}" -X GET https://network.pivotal.io/api/v2/authentication

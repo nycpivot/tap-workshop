@@ -6,10 +6,14 @@ This repository offers application developers and operators practical examples f
 
 ## Prerequisites
 
+* Ubuntu Linux
+* AWS CLI
 * Kubernetes cluster (minimum version 1.23)
 * TAP (version 1.4 or higher)
 * Tanzu CLI and plugins
 * Domain name, subdomains with wildcard
+
+All of these, with the exception of Ubuntu, are included in the script
 
 ## Getting Started
 

@@ -1,7 +1,8 @@
 #!/bin/bash
 
-read -p "AWS Account Id (9649''''''''): " aws_account_id
-read -p "AWS Region Code (us-west-1): " aws_region_code
+read -p "AWS Account Id: " aws_account_id
+read -p "AWS Region Code: " aws_region_code
+read -p "Pivnet User: " pivnet_user
 
 if [[ -z $aws_account_id ]]
 then
@@ -13,8 +14,12 @@ then
 	aws_region_code=us-west-1
 fi
 
+if [[ -z $pivnet_user ]]
+then
+	pivnet_user=mjames@pivotal.io
+fi
+
 tap_full_cluster=tap-full
-pivnet_user=mjames@pivotal.io
 full_domain=full.tap.nycpivot.com
 tap_version=1.4.1
 

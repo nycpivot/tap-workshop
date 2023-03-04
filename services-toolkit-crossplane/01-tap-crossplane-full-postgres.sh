@@ -9,20 +9,7 @@ then
 	aws_region_code=us-west-1
 fi
 
-kubectl config use-context tap-run
-
-#INSTALL CROSSPLANE IN NAMESPACE
-kubectl create namespace crossplane-system
-
-helm repo add crossplane-stable https://charts.crossplane.io/stable
-helm repo update
-
-helm install crossplane --namespace crossplane-system crossplane-stable/crossplane \
-  --set 'args={--enable-external-secret-stores}'
-
-
 #INSTALL AWS PROVIDER
-rm provider-aws.yaml
 cat <<EOF | tee provider-aws.yaml
 apiVersion: pkg.crossplane.io/v1
 kind: Provider
@@ -34,18 +21,13 @@ EOF
 
 kubectl apply -f provider-aws.yaml
 
-#kubectl get provider.pkg.crossplane.io provider-aws
-
-#aws rds describe-db-instances --region $aws_region_code
+rm provider-aws.yaml
 
 #EXTRACT AWS CREDS TO CREATE A FILE, USED TO CREATE A SECRET THAT PROVIDER CONFIG BELOW WILL BE ABLE TO USE TO CREATE RESOURCES
 echo -e "[default]\naws_access_key_id = $(aws configure get aws_access_key_id)\naws_secret_access_key = $(aws configure get aws_secret_access_key)\naws_session_token = $(aws configure get aws_session_token)" > creds.conf
 
 kubectl create secret generic aws-provider-creds -n crossplane-system --from-file=creds=./creds.conf
 
-rm -f creds.conf
-
-rm provider-config.yaml
 cat <<EOF | tee provider-config.yaml
 apiVersion: aws.crossplane.io/v1beta1
 kind: ProviderConfig
@@ -62,7 +44,10 @@ EOF
 
 kubectl apply -f provider-config.yaml
 
-rm xrd.yaml
+rm -f creds.conf
+rm provider-config.yaml
+
+#CREATE POSTGRES COMPOSITE RESOURCE DEFINITION
 cat <<EOF | tee xrd.yaml
 apiVersion: apiextensions.crossplane.io/v1
 kind: CompositeResourceDefinition
@@ -108,7 +93,10 @@ EOF
 
 kubectl apply -f xrd.yaml
 
-rm composition.yaml
+rm xrd.yaml
+
+
+#CREATE POSTGRES COMPOSITION
 cat <<EOF | tee composition.yaml
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
@@ -168,10 +156,10 @@ EOF
 
 kubectl apply -f composition.yaml
 
+rm composition.yaml
 
 #CREATE RDS DATABASE INSTANCE HERE (WILL BE VISIBLE IN CONSOLE)
-rm postgres.yaml
-cat <<EOF | tee postgres.yaml
+cat <<EOF | tee postgres-instance.yaml
 apiVersion: bindable.database.example.org/v1alpha1
 kind: PostgreSQLInstance
 metadata:
@@ -191,19 +179,20 @@ spec:
        services.apps.tanzu.vmware.com/class: rds-postgres
 EOF
 
-kubectl apply -f postgres.yaml
+kubectl apply -f postgres-instance.yaml
 
-#WAIT FOR rds-postgres-db to be created when database is finished creating
+rm postgres-instance.yaml
+
+#wait for rds-postgres-db secret to be created when database is finished creating
 kubectl get secrets -w
 
-kubectl get secret rds-postgres-db -o yaml
-kubectl get secret rds-postgres-db -o jsonpath='{.data.host}' | base64 --decode
+#kubectl get secret rds-postgres-db -o yaml
+#kubectl get secret rds-postgres-db -o jsonpath='{.data.host}' | base64 --decode
 
-aws rds describe-db-instances --region $aws_region_code | jq [.DBInstances[].Endpoint.Address]
+#aws rds describe-db-instances --region $aws_region_code | jq [.DBInstances[].Endpoint.Address]
 
 #CREATE SERVICE INSTANCE CLASS, TO MAKE AVAILABLE TO MAKE CLAIM
-rm postgres-instance.yaml
-cat <<EOF | tee postgres-instance.yaml
+cat <<EOF | tee cluster-instance.yaml
 apiVersion: services.apps.tanzu.vmware.com/v1alpha1
 kind: ClusterInstanceClass
 metadata:
@@ -219,9 +208,10 @@ spec:
     fieldSelector: type=connection.crossplane.io/v1alpha1
 EOF
 
-kubectl apply -f postgres-instance.yaml
+kubectl apply -f cluster-instance.yaml
 
-rm stk-role.yaml
+rm cluster-instance.yaml
+
 cat <<EOF | tee stk-role.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -242,13 +232,14 @@ EOF
 
 kubectl apply -f stk-role.yaml
 
+rm stk-role.yaml
 
-tanzu service classes list
+#tanzu service classes list
 
 #THIS WILL THROW ERROR IF IT'S RUN FOR THE FIRST TIME
 tanzu service resource-claim delete rds-claim --yes
 
-tanzu services claimable list --class rds-postgres
+#tanzu services claimable list --class rds-postgres
 
 tanzu service resource-claim create rds-claim \
 --resource-name rds-postgres-db \

@@ -63,8 +63,6 @@ sudo install kubectl-linux-v1.22.5+vmware.1 /usr/local/bin/kubectl
 rm kubectl-linux-v1.22.5+vmware.1
 kubectl version
 
-git clone https://github.com/nycpivot/tap-workshop
-
 echo
 echo export AWS_ACCOUNT_ID=$aws_account_id >> .bashrc
 echo
@@ -80,6 +78,7 @@ cat <<EOF | tee secrets.json
 }
 EOF
 
+aws secretsmanager delete-secret --secret-id $pivnet_username --region $aws_region_code --force-delete-without-recovery
 aws secretsmanager create-secret --name $pivnet_username --secret-string file://secrets.json
 
 echo

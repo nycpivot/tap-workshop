@@ -1,24 +1,14 @@
 #!/bin/bash
 
-read -p "AWS Account Id: " aws_account_id
-read -p "AWS Region Code: " aws_region_code
+#aws elb describe-load-balancers
+#aws elb delete-load-balancer --load-balancer-name ad09633adaf51437ab2ef70c6b07e476
 
-if [ -z $aws_account_id ]
-then
-    aws_account_id=964978768106
-fi
+aws ecr delete-repository --repository-name tap-images --region $AWS_REGION_CODE
+aws ecr delete-repository --repository-name tap-build-service --region $AWS_REGION_CODE
 
-if [ -z $aws_region_code ]
-then
-    aws_region_code=us-west-1
-fi
+arn=arn:aws:eks:${AWS_REGION_CODE}:${AWS_ACCOUNT_ID}:cluster
 
-aws elb describe-load-balancers
-aws elb delete-load-balancer --load-balancer-name 
-
-arn=arn:aws:eks:${aws_region_code}:${aws_account_id}:cluster
-
-aws cloudformation delete-stack --region $aws_region_code --stack-name tap-multicluster-stack
-aws cloudformation wait stack-delete-complete --region $aws_region_code --stack-name tap-multicluster-stack
+aws cloudformation delete-stack --stack-name tap-workshop-singlecluster-stack --region $AWS_REGION_CODE
+aws cloudformation wait stack-delete-complete --stack-name tap-workshop-singlecluster-stack --region $AWS_REGION_CODE
 
 rm .kube/config

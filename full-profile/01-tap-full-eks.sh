@@ -1,8 +1,10 @@
 #!/bin/bash
 
-tap_full_cluster=tap-full
-full_domain=full.tap.nycpivot.com
+read -p "DNS Zone Id: " hosted_zone_id
+read -p "Full Domain Name: " full_domain
+
 tap_version=1.4.1
+tap_full_cluster=tap-full
 
 target_registry=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION_CODE.amazonaws.com
 target_repo=tap-images
@@ -62,7 +64,6 @@ aws eks describe-cluster --name $tap_full_cluster --query "cluster.identity.oidc
 
 #https://docs.aws.amazon.com/eks/latest/userguide/csi-iam-role.html
 oidc_id=$(aws eks describe-cluster --name $tap_full_cluster --query "cluster.identity.oidc.issuer" --output text | awk -F '/' '{print $5}')
-#echo "OIDC Id: $oidc_id"
 
 # Check if a IAM OIDC provider exists for the cluster
 # https://docs.aws.amazon.com/eks/latest/userguide/enable-iam-roles-for-service-accounts.html
@@ -119,7 +120,7 @@ rm aws-ebs-csi-driver-trust-policy.json
 #RBAC FOR ECR
 oidcProvider=$(aws eks describe-cluster --name $tap_full_cluster --region $AWS_REGION_CODE | jq '.cluster.identity.oidc.issuer' | tr -d '"' | sed 's/https:\/\///')
 
-cat << EOF > build-service-trust-policy.json
+cat <<EOF > build-service-trust-policy.json
 {
     "Version": "2012-10-17",
     "Statement": [
@@ -145,7 +146,7 @@ cat << EOF > build-service-trust-policy.json
 }
 EOF
 
-cat << EOF > build-service-policy.json
+cat <<EOF > build-service-policy.json
 {
     "Version": "2012-10-17",
     "Statement": [
@@ -212,7 +213,7 @@ cat << EOF > build-service-policy.json
 }
 EOF
 
-cat << EOF > workload-trust-policy.json
+cat <<EOF > workload-trust-policy.json
 {
     "Version": "2012-10-17",
     "Statement": [
@@ -233,7 +234,7 @@ cat << EOF > workload-trust-policy.json
 }
 EOF
 
-cat << EOF > workload-policy.json
+cat <<EOF > workload-policy.json
 {
     "Version": "2012-10-17",
     "Statement": [
@@ -311,12 +312,10 @@ aws iam delete-role --role-name tap-workload
 
 # Create the Build Service Role
 aws iam create-role --role-name tap-build-service --assume-role-policy-document file://build-service-trust-policy.json
-# Attach the Policy to the Build Role
 aws iam put-role-policy --role-name tap-build-service --policy-name tapBuildServicePolicy --policy-document file://build-service-policy.json
 
 # Create the Workload Role
 aws iam create-role --role-name tap-workload --assume-role-policy-document file://workload-trust-policy.json
-# Attach the Policy to the Workload Role
 aws iam put-role-policy --role-name tap-workload --policy-name tapWorkload --policy-document file://workload-policy.json
 
 rm build-service-trust-policy.json
@@ -335,8 +334,6 @@ tar -xvf $HOME/tanzu/${cli_filename} -C $HOME/tanzu
 cd tanzu
 
 sudo install cli/core/$VERSION/tanzu-core-linux_amd64 /usr/local/bin/tanzu
-
-tanzu version
 
 tanzu plugin install --local cli all
 #tanzu plugin list
@@ -444,38 +441,6 @@ tanzu package install tap -p tap.tanzu.vmware.com -v $tap_version --values-file 
 #tanzu package installed get tap -n tap-install
 #tanzu package installed list -A
 
-# CONFIGURE DNS NAME WITH ELB IP
-kubectl get svc -n tanzu-system-ingress
-
-read -p "Tanzu System Ingress IP: " external_ip
-
-nslookup $external_ip
-read -p "IP Address: " ip_address
-
-rm change-batch.json
-cat <<EOF | tee change-batch.json
-{
-    "Comment": "Update IP address.",
-    "Changes": [
-        {
-            "Action": "UPSERT",
-            "ResourceRecordSet": {
-                "Name": "*.${full_domain}",
-                "Type": "A",
-                "TTL": 60,
-                "ResourceRecords": [
-                    {
-                        "Value": "${ip_address}"
-                    }
-                ]
-            }
-        }
-    ]
-}
-EOF
-
-aws route53 change-resource-record-sets --hosted-zone-id Z0294944QU6R4X4A718M --change-batch file:///$HOME/change-batch.json
-
 
 #DEVELOPER NAMESPACE
 tanzu secret registry add registry-credentials --server ${target_registry} --username "AWS" --password "${target_registry}" --namespace default
@@ -525,6 +490,39 @@ subjects:
   - kind: ServiceAccount
     name: default
 EOF
+
+
+# CONFIGURE DNS NAME WITH ELB IP
+kubectl get svc -n tanzu-system-ingress
+
+read -p "Tanzu System Ingress IP: " external_ip
+
+nslookup $external_ip
+read -p "IP Address: " ip_address
+
+rm change-batch.json
+cat <<EOF | tee change-batch.json
+{
+    "Comment": "Update IP address.",
+    "Changes": [
+        {
+            "Action": "UPSERT",
+            "ResourceRecordSet": {
+                "Name": "*.${full_domain}",
+                "Type": "A",
+                "TTL": 60,
+                "ResourceRecords": [
+                    {
+                        "Value": "${ip_address}"
+                    }
+                ]
+            }
+        }
+    ]
+}
+EOF
+
+aws route53 change-resource-record-sets --hosted-zone-id $hosted_zone_id --change-batch file:///$HOME/change-batch.json
 
 echo
 echo "DONE"

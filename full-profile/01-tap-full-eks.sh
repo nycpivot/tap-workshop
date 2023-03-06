@@ -16,7 +16,8 @@ essentials_filename=tanzu-cluster-essentials-linux-amd64-1.4.0.tgz
 export TANZU_CLI_NO_INIT=true
 export VERSION=v0.25.4
 
-#SECRETS
+
+# 1. PIVNET SECRETS
 pivnet_password=$(aws secretsmanager get-secret-value --secret-id $PIVNET_USERNAME | jq -r .SecretString | jq -r .\"pivnet_password\")
 pivnet_token=$(aws secretsmanager get-secret-value --secret-id $PIVNET_USERNAME | jq -r .SecretString | jq -r .\"pivnet_token\")
 token=$(curl -X POST https://network.pivotal.io/api/v2/authentication/access_tokens -d '{"refresh_token":"'${pivnet_token}'"}')
@@ -24,12 +25,15 @@ access_token=$(echo ${token} | jq -r .access_token)
 
 curl -i -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer ${access_token}" -X GET https://network.pivotal.io/api/v2/authentication
 
+
+# 2. CLOUD FORMATION (VPC, EKS)
 aws cloudformation create-stack --stack-name tap-workshop-singlecluster-stack --region $AWS_REGION_CODE --template-body file:///home/ubuntu/tap-workshop/full-profile/config/tap-singlecluster-stack.yaml
 aws cloudformation wait stack-create-complete --stack-name tap-workshop-singlecluster-stack --region $AWS_REGION_CODE
 
 #eksctl create cluster --name $tap_full_cluster --managed --region $aws_region_code --instance-types t3.xlarge --version 1.23 --with-oidc -N 5
 
-#UPDATE KUBECONFIG
+
+# 3. UPDATE KUBECONFIG
 arn=arn:aws:eks:${AWS_REGION_CODE}:${AWS_ACCOUNT_ID}:cluster
 
 aws eks update-kubeconfig --name $tap_full_cluster --region $AWS_REGION_CODE
@@ -401,7 +405,7 @@ supply_chain: basic
 ootb_supply_chain_basic:
   registry:
     server: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION_CODE}.amazonaws.com
-    repository: "supply-chain"
+    repository: "tanzu-application-platform"
   gitops:
     ssh_secret: ""
   cluster_builder: default
@@ -525,8 +529,7 @@ EOF
 aws route53 change-resource-record-sets --hosted-zone-id $hosted_zone_id --change-batch file:///$HOME/change-batch.json
 
 echo
-echo "DONE"
-echo
 echo http://tap-gui.${full_domain}
 echo
-
+echo "HAPPY TAP'ING"
+echo

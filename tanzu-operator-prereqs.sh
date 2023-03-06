@@ -55,6 +55,7 @@ aws configure set aws_access_key_id $aws_access_key_id
 aws configure set aws_secret_access_key $aws_secret_access_key
 aws configure set default.region $aws_region_code
 
+
 #KUBECTL
 wget https://tanzustorage.blob.core.windows.net/tanzu/kubectl-linux-v1.22.5+vmware.1.gz
 gunzip kubectl-linux-v1.22.5+vmware.1.gz
@@ -62,6 +63,15 @@ gunzip kubectl-linux-v1.22.5+vmware.1.gz
 sudo install kubectl-linux-v1.22.5+vmware.1 /usr/local/bin/kubectl
 rm kubectl-linux-v1.22.5+vmware.1
 kubectl version
+
+
+#DEMO-MAGIC
+wget https://raw.githubusercontent.com/paxtonhare/demo-magic/master/demo-magic.sh
+sudo mv demo-magic.sh /usr/local/bin/demo-magic.sh
+chmod +x /usr/local/bin/demo-magic.sh
+
+sudo apt install pv #required for demo-magic
+
 
 echo
 echo export AWS_ACCOUNT_ID=$aws_account_id >> .bashrc

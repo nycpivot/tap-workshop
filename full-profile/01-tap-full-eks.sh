@@ -34,6 +34,8 @@ aws cloudformation wait stack-create-complete --stack-name tap-workshop-singlecl
 
 
 # 3. UPDATE KUBECONFIG
+rm .kube/config
+
 arn=arn:aws:eks:${AWS_REGION_CODE}:${AWS_ACCOUNT_ID}:cluster
 
 aws eks update-kubeconfig --name $tap_full_cluster --region $AWS_REGION_CODE
@@ -118,8 +120,8 @@ rm aws-ebs-csi-driver-trust-policy.json
 
 
 #CREATE ECRs
-#aws ecr create-repository --repository-name tap-images --region $aws_region_code
-#aws ecr create-repository --repository-name tap-build-service --region $aws_region_code
+aws ecr create-repository --repository-name tap-images --region $AWS_REGION_CODE
+aws ecr create-repository --repository-name tap-build-service --region $AWS_REGION_CODE
 
 #RBAC FOR ECR
 oidcProvider=$(aws eks describe-cluster --name $tap_full_cluster --region $AWS_REGION_CODE | jq '.cluster.identity.oidc.issuer' | tr -d '"' | sed 's/https:\/\///')

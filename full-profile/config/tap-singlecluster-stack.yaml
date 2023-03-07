@@ -74,14 +74,6 @@ Resources:
       RouteTableId: !Ref PublicRouteTable
       GatewayId: !Ref InternetGateway
       DestinationCidrBlock: 0.0.0.0/0
-  ECRImages:
-    Type: AWS::ECR::Repository
-    Properties:
-      RepositoryName: tap-images
-  ECRBuildService:
-    Type: AWS::ECR::Repository
-    Properties:
-      RepositoryName: tap-build-service
   EKSClusterFull:
     Type: AWS::EKS::Cluster
     Properties:

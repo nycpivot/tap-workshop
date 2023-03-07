@@ -82,10 +82,6 @@ Resources:
     Type: AWS::ECR::Repository
     Properties:
       RepositoryName: tap-build-service
-  ECRPlatform:
-    Type: AWS::ECR::Repository
-    Properties:
-      RepositoryName: tanzu-application-platform
   EKSClusterFull:
     Type: AWS::EKS::Cluster
     Properties:

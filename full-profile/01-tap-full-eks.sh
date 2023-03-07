@@ -397,31 +397,31 @@ profile: full
 ceip_policy_disclosed: true
 shared:
   ingress_domain: "${full_domain}"
-buildservice:
-  kp_default_repository: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION_CODE}.amazonaws.com/${target_tbs_repo}
-  # Enable the build service k8s service account to bind to the AWS IAM Role
-  kp_default_repository_aws_iam_role_arn: "arn:aws:iam::${AWS_ACCOUNT_ID}:role/${target_tbs_repo}"
 supply_chain: basic
 ootb_supply_chain_basic:
   registry:
     server: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION_CODE}.amazonaws.com
     repository: "tanzu-application-platform"
-  gitops:
-    ssh_secret: ""
-  cluster_builder: default
-  service_account: default
+buildservice:
+  kp_default_repository: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION_CODE}.amazonaws.com/${target_tbs_repo}
+  kp_default_repository_aws_iam_role_arn: "arn:aws:iam::${AWS_ACCOUNT_ID}:role/${target_tbs_repo}"
+contour:
+  infrastructure_provider: aws
+  envoy:
+    service:
+      aws:
+        LBType: nlb
+ootb_templates:
+  iaas_auth: true
 tap_gui:
   service_type: LoadBalancer
   app_config:
-    app:
-      baseUrl: http://tap-gui.${full_domain}
     catalog:
       locations:
         - type: url
           target: https://github.com/nycpivot/${git_catalog_repository}/catalog-info.yaml
-learningcenter:
-  ingressDomain: "learningcenter.full.tap.nycpivot.com"
 metadata_store:
+  ns_for_export_app_cert: "default"
   app_service_type: LoadBalancer
 scanning:
   metadataStore:
@@ -429,16 +429,10 @@ scanning:
 grype:
   namespace: "default"
   targetImagePullSecret: "registry-credentials"
-contour:
-  infrastructure_provider: aws
-  envoy:
-    service:
-      aws:
-        LBType: nlb
 cnrs:
   domain_name: $full_domain
-policy:
-  tuf_enabled: false
+excluded_packages:
+  - policy.apps.tanzu.vmware.com
 EOF
 
 tanzu package install tap -p tap.tanzu.vmware.com -v $tap_version --values-file tap-values-full.yaml -n tap-install

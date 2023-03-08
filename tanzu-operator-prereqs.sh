@@ -55,6 +55,8 @@ aws configure set aws_access_key_id $aws_access_key_id
 aws configure set aws_secret_access_key $aws_secret_access_key
 aws configure set default.region $aws_region_code
 
+echo cli_pager= >> $HOME/.aws/config
+
 
 #KUBECTL
 wget https://tanzustorage.blob.core.windows.net/tanzu/kubectl-linux-v1.22.5+vmware.1.gz

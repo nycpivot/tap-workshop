@@ -17,7 +17,9 @@ export TANZU_CLI_NO_INIT=true
 export VERSION=v0.25.4
 
 
-# 1. PIVNET SECRETS
+# 1. FETCH PIVNET SECRETS
+echo "RETRIEVING SECRETS FOR PIVNET REGISTRY"
+
 pivnet_password=$(aws secretsmanager get-secret-value --secret-id $PIVNET_USERNAME | jq -r .SecretString | jq -r .\"pivnet_password\")
 pivnet_token=$(aws secretsmanager get-secret-value --secret-id $PIVNET_USERNAME | jq -r .SecretString | jq -r .\"pivnet_token\")
 token=$(curl -X POST https://network.pivotal.io/api/v2/authentication/access_tokens -d '{"refresh_token":"'${pivnet_token}'"}')
@@ -27,6 +29,8 @@ curl -i -H "Accept: application/json" -H "Content-Type: application/json" -H "Au
 
 
 # 2. CLOUD FORMATION (VPC, EKS)
+echo "RUNNING CLOUDFORMATION TEMPLATE"
+
 aws cloudformation create-stack --stack-name tap-workshop-singlecluster-stack --region $AWS_REGION_CODE --template-body file:///home/ubuntu/tap-workshop/full-profile/config/tap-singlecluster-stack.yaml
 aws cloudformation wait stack-create-complete --stack-name tap-workshop-singlecluster-stack --region $AWS_REGION_CODE
 
@@ -34,6 +38,8 @@ aws cloudformation wait stack-create-complete --stack-name tap-workshop-singlecl
 
 
 # 3. UPDATE KUBECONFIG
+echo "UPDATING KUBECONFIG"
+
 rm .kube/config
 
 arn=arn:aws:eks:${AWS_REGION_CODE}:${AWS_ACCOUNT_ID}:cluster
@@ -45,7 +51,9 @@ kubectl config rename-context ${arn}/${tap_full_cluster} $tap_full_cluster
 kubectl config use-context $tap_full_cluster
 
 
-#INSTALL CSI PLUGIN
+# 4. INSTALL CSI PLUGIN
+echo "INSTALLING CSI PLUGIN"
+
 rolename=${tap_full_cluster}-csi-driver-role
 
 aws iam detach-role-policy \
@@ -64,9 +72,6 @@ aws eks create-addon \
     --cluster-name $tap_full_cluster \
     --addon-name aws-ebs-csi-driver \
     --service-account-role-arn "arn:aws:iam::${AWS_ACCOUNT_ID}:role/${rolename}"
-
-#https://docs.aws.amazon.com/eks/latest/userguide/csi-iam-role.html
-aws eks describe-cluster --name $tap_full_cluster --query "cluster.identity.oidc.issuer" --output text
 
 #https://docs.aws.amazon.com/eks/latest/userguide/csi-iam-role.html
 oidc_id=$(aws eks describe-cluster --name $tap_full_cluster --query "cluster.identity.oidc.issuer" --output text | awk -F '/' '{print $5}')
@@ -119,11 +124,16 @@ kubectl annotate serviceaccount ebs-csi-controller-sa \
 rm aws-ebs-csi-driver-trust-policy.json
 
 
-#CREATE ECRs
+# 5. CREATE ECRs
+echo "CREATING ECRs"
+
 aws ecr create-repository --repository-name tap-images --region $AWS_REGION_CODE
 aws ecr create-repository --repository-name tap-build-service --region $AWS_REGION_CODE
 
-#RBAC FOR ECR
+
+# 6. RBAC FOR ECR FROM EKS CLUSTER
+echo "CREATING IAM ROLES FOR ECR"
+
 oidcProvider=$(aws eks describe-cluster --name $tap_full_cluster --region $AWS_REGION_CODE | jq '.cluster.identity.oidc.issuer' | tr -d '"' | sed 's/https:\/\///')
 
 cat <<EOF > build-service-trust-policy.json
@@ -330,7 +340,9 @@ rm workload-trust-policy.json
 rm workload-policy.json
 
 
-#TANZU PREREQS
+# 7. TANZU PREREQS
+echo "INSTALLING TANZU AND CLUSTER ESSENTIALS"
+
 rm -rf $HOME/tanzu
 mkdir $HOME/tanzu
 
@@ -346,7 +358,7 @@ tanzu plugin install --local cli all
 
 cd $HOME
 
-#CLUSTER ESSENTIALS
+#cluster essentials
 rm -rf $HOME/tanzu-cluster-essentials
 mkdir $HOME/tanzu-cluster-essentials
 
@@ -372,7 +384,9 @@ rm $HOME/tanzu/${cli_filename}
 rm $HOME/tanzu-cluster-essentials/${essentials_filename}
 
 
-#IMPORT TAP PACKAGES
+# 8. IMPORT TAP PACKAGES
+echo "IMPORTING TAP PACKAGES"
+
 aws ecr get-login-password --region $AWS_REGION_CODE | docker login --username AWS --password-stdin $target_registry
 
 imgpkg copy --concurrency 1 -b registry.tanzu.vmware.com/tanzu-application-platform/tap-packages:${tap_version} --to-repo ${target_registry}/${target_repo}
@@ -387,7 +401,9 @@ tanzu package repository add tanzu-tap-repository \
 #tanzu package available list --namespace tap-install
 #tanzu package available list tap.tanzu.vmware.com --namespace tap-install
 
-#INSTALL FULL TAP PROFILE
+# 9. INSTALL FULL TAP PROFILE
+echo "INSTALLING FULL TAP PROFILE"
+
 export INSTALL_REGISTRY_HOSTNAME=registry.tanzu.vmware.com
 export INSTALL_REGISTRY_USERNAME=mjames@pivotal.io
 export INSTALL_REGISTRY_PASSWORD=$pivnet_password
@@ -442,7 +458,9 @@ tanzu package install tap -p tap.tanzu.vmware.com -v $tap_version --values-file 
 #tanzu package installed list -A
 
 
-#DEVELOPER NAMESPACE
+# 10. DEVELOPER NAMESPACE
+echo "CREATING DEVELOPER NAMESPACE"
+
 tanzu secret registry add registry-credentials --server ${target_registry} --username "AWS" --password "${target_registry}" --namespace default
 
 cat <<EOF | kubectl -n default apply -f -
@@ -492,7 +510,9 @@ subjects:
 EOF
 
 
-# CONFIGURE DNS NAME WITH ELB IP
+# 11. CONFIGURE DNS NAME WITH ELB IP
+echo "CONFIGURING DNS"
+
 kubectl get svc -n tanzu-system-ingress
 
 read -p "Tanzu System Ingress IP: " external_ip

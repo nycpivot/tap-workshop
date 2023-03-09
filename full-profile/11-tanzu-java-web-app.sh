@@ -45,8 +45,8 @@ echo
 pe "tanzu apps workload delete $app_name --yes"
 echo
 
-pe "aws ecr create-repository --repository-name tanzu-application-platform/$app_name-default --region $AWS_REGION_CODE"
-pe "aws ecr create-repository --repository-name tanzu-application-platform/$app_name-default-bundle --region $AWS_REGION_CODE"
+pe "aws ecr create-repository --repository-name tanzu-application-platform/$app_name-default --region $AWS_REGION --no-cli-pager"
+pe "aws ecr create-repository --repository-name tanzu-application-platform/$app_name-default-bundle --region $AWS_REGION --no-cli-pager"
 echo
 
 pe "clear"

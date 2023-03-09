@@ -1,18 +1,20 @@
 #!/bin/bash
 
 classic_lb=$(aws elb describe-load-balancers | jq -r .LoadBalancerDescriptions[].LoadBalancerName)
-network_lb=$(aws elbv2 describe-load-balancers | jq -r .LoadBalancers[].LoadBalancerName)
+network_lb=$(aws elbv2 describe-load-balancers | jq -r .LoadBalancers[].LoadBalancerArn)
 
 aws elb delete-load-balancer --load-balancer-name $classic_lb
-aws elbv2 delete-load-balancer --load-balancer-name $network_lb
+aws elbv2 delete-load-balancer --load-balancer-arn $network_lb
 
-aws ecr delete-repository --repository-name tap-images --region $AWS_REGION_CODE --force
-aws ecr delete-repository --repository-name tap-build-service --region $AWS_REGION_CODE --force
-aws ecr delete-repository --repository-name tanzu-application-platform/tanzu-java-web-app-default --region $AWS_REGION_CODE --force
-aws ecr delete-repository --repository-name tanzu-application-platform/tanzu-java-web-app-default-bundle --region $AWS_REGION_CODE --force
+aws ecr delete-repository --repository-name tap-images --region $AWS_REGION --force
+aws ecr delete-repository --repository-name tap-build-service --region $AWS_REGION --force
+aws ecr delete-repository --repository-name tanzu-application-platform/tanzu-java-web-app-default --region $AWS_REGION --force
+aws ecr delete-repository --repository-name tanzu-application-platform/tanzu-java-web-app-default-bundle --region $AWS_REGION --force
 
-aws cloudformation delete-stack --stack-name tap-workshop-singlecluster-stack --region $AWS_REGION_CODE
-aws cloudformation wait stack-delete-complete --stack-name tap-workshop-singlecluster-stack --region $AWS_REGION_CODE
+sleep 300
+
+aws cloudformation delete-stack --stack-name tap-workshop-singlecluster-stack --region $AWS_REGION
+aws cloudformation wait stack-delete-complete --stack-name tap-workshop-singlecluster-stack --region $AWS_REGION
 
 rm .kube/config
 

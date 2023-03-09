@@ -3,18 +3,16 @@
 read -p "DNS Zone Id: " hosted_zone_id
 read -p "Full Domain Name: " full_domain
 
-tap_version=1.4.1
-tap_full_cluster=tap-full
-
-target_registry=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION_CODE.amazonaws.com
-target_repo=tap-images
 target_tbs_repo=tap-build-service
 git_catalog_repository=tanzu-application-platform
 
-cli_filename=tanzu-framework-linux-amd64-v0.25.4.1.tar
-essentials_filename=tanzu-cluster-essentials-linux-amd64-1.4.0.tgz
+cli_filename=tanzu-framework-linux-amd64-v0.25.4.5.tar
+essentials_filename=tanzu-cluster-essentials-linux-amd64-1.4.1.tgz
+
+export EKS_CLUSTER_NAME=tap-full
 export TANZU_CLI_NO_INIT=true
 export VERSION=v0.25.4
+export TAP_VERSION=1.4.2
 
 
 # 1. FETCH PIVNET SECRETS
@@ -31,10 +29,10 @@ curl -i -H "Accept: application/json" -H "Content-Type: application/json" -H "Au
 # 2. CLOUD FORMATION (VPC, EKS)
 echo "RUNNING CLOUDFORMATION TEMPLATE"
 
-aws cloudformation create-stack --stack-name tap-workshop-singlecluster-stack --region $AWS_REGION_CODE --template-body file:///home/ubuntu/tap-workshop/full-profile/config/tap-singlecluster-stack.yaml
-aws cloudformation wait stack-create-complete --stack-name tap-workshop-singlecluster-stack --region $AWS_REGION_CODE
+aws cloudformation create-stack --stack-name tap-workshop-singlecluster-stack --region $AWS_REGION --template-body file:///home/ubuntu/tap-workshop/full-profile/config/tap-singlecluster-stack.yaml
+aws cloudformation wait stack-create-complete --stack-name tap-workshop-singlecluster-stack --region $AWS_REGION
 
-#eksctl create cluster --name $tap_full_cluster --managed --region $aws_region_code --instance-types t3.xlarge --version 1.23 --with-oidc -N 5
+#eksctl create cluster --name $EKS_CLUSTER_NAME --managed --region $AWS_REGION --instance-types t3.xlarge --version 1.23 --with-oidc -N 5
 
 
 # 3. UPDATE KUBECONFIG
@@ -42,39 +40,41 @@ echo "UPDATING KUBECONFIG"
 
 rm .kube/config
 
-arn=arn:aws:eks:${AWS_REGION_CODE}:${AWS_ACCOUNT_ID}:cluster
+arn=arn:aws:eks:${AWS_REGION}:${AWS_ACCOUNT_ID}:cluster
 
-aws eks update-kubeconfig --name $tap_full_cluster --region $AWS_REGION_CODE
+aws eks update-kubeconfig --name $EKS_CLUSTER_NAME --region $AWS_REGION
 
-kubectl config rename-context ${arn}/${tap_full_cluster} $tap_full_cluster
+kubectl config rename-context ${arn}/${EKS_CLUSTER_NAME} $EKS_CLUSTER_NAME
 
-kubectl config use-context $tap_full_cluster
+kubectl config use-context $EKS_CLUSTER_NAME
 
 
 # 4. INSTALL CSI PLUGIN
 echo "INSTALLING CSI PLUGIN"
 
-rolename=${tap_full_cluster}-csi-driver-role
+rolename=${EKS_CLUSTER_NAME}-csi-driver-role
 
 aws iam detach-role-policy \
     --role-name ${rolename} \
-    --policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy
-    
+    --policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy \
+    --no-cli-pager
+
 aws iam delete-role --role-name ${rolename}
 
 #https://docs.aws.amazon.com/eks/latest/userguide/managing-ebs-csi.html
 #INSTALL CSI DRIVER PLUGIN (REQUIRED FOR K8S 1.23)
 #aws eks delete-addon \
-#    --cluster-name $tap_full_cluster \
+#    --cluster-name $EKS_CLUSTER_NAME \
 #    --addon-name aws-ebs-csi-driver
 
 aws eks create-addon \
-    --cluster-name $tap_full_cluster \
+    --cluster-name $EKS_CLUSTER_NAME \
     --addon-name aws-ebs-csi-driver \
-    --service-account-role-arn "arn:aws:iam::${AWS_ACCOUNT_ID}:role/${rolename}"
+    --service-account-role-arn "arn:aws:iam::${AWS_ACCOUNT_ID}:role/${rolename}" \
+    --no-cli-pager
 
 #https://docs.aws.amazon.com/eks/latest/userguide/csi-iam-role.html
-oidc_id=$(aws eks describe-cluster --name $tap_full_cluster --query "cluster.identity.oidc.issuer" --output text | awk -F '/' '{print $5}')
+oidc_id=$(aws eks describe-cluster --name $EKS_CLUSTER_NAME --query "cluster.identity.oidc.issuer" --output text | awk -F '/' '{print $5}')
 
 # Check if a IAM OIDC provider exists for the cluster
 # https://docs.aws.amazon.com/eks/latest/userguide/enable-iam-roles-for-service-accounts.html
@@ -85,7 +85,7 @@ if [[ -z $(aws iam list-open-id-connect-providers | grep $oidc_id) ]]; then
     exit 1
     fi
 
-    eksctl utils associate-iam-oidc-provider --cluster $tap_full_cluster --approve
+    eksctl utils associate-iam-oidc-provider --cluster $EKS_CLUSTER_NAME --approve
 fi
 
 cat <<EOF | tee aws-ebs-csi-driver-trust-policy.json
@@ -95,13 +95,13 @@ cat <<EOF | tee aws-ebs-csi-driver-trust-policy.json
     {
       "Effect": "Allow",
       "Principal": {
-        "Federated": "arn:aws:iam::${AWS_ACCOUNT_ID}:oidc-provider/oidc.eks.${AWS_REGION_CODE}.amazonaws.com/id/${oidc_id}"
+        "Federated": "arn:aws:iam::${AWS_ACCOUNT_ID}:oidc-provider/oidc.eks.${AWS_REGION}.amazonaws.com/id/${oidc_id}"
       },
       "Action": "sts:AssumeRoleWithWebIdentity",
       "Condition": {
         "StringEquals": {
-          "oidc.eks.${AWS_REGION_CODE}.amazonaws.com/id/${oidc_id}:aud": "sts.amazonaws.com",
-          "oidc.eks.${AWS_REGION_CODE}.amazonaws.com/id/${oidc_id}:sub": "system:serviceaccount:kube-system:ebs-csi-controller-sa"
+          "oidc.eks.${AWS_REGION}.amazonaws.com/id/${oidc_id}:aud": "sts.amazonaws.com",
+          "oidc.eks.${AWS_REGION}.amazonaws.com/id/${oidc_id}:sub": "system:serviceaccount:kube-system:ebs-csi-controller-sa"
         }
       }
     }
@@ -111,12 +111,14 @@ EOF
 
 aws iam create-role \
   --role-name $rolename \
-  --assume-role-policy-document file://"aws-ebs-csi-driver-trust-policy.json"
-  
+  --assume-role-policy-document file://"aws-ebs-csi-driver-trust-policy.json" \
+  --no-cli-pager
+
 aws iam attach-role-policy \
   --role-name $rolename \
-  --policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy
-  
+  --policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy \
+  --no-cli-pager
+
 kubectl annotate serviceaccount ebs-csi-controller-sa \
     -n kube-system --overwrite \
     eks.amazonaws.com/role-arn=arn:aws:iam::${AWS_ACCOUNT_ID}:role/${rolename}
@@ -127,14 +129,14 @@ rm aws-ebs-csi-driver-trust-policy.json
 # 5. CREATE ECRs
 echo "CREATING ECRs"
 
-aws ecr create-repository --repository-name tap-images --region $AWS_REGION_CODE
-aws ecr create-repository --repository-name tap-build-service --region $AWS_REGION_CODE
+aws ecr create-repository --repository-name tap-images --region $AWS_REGION --no-cli-pager
+aws ecr create-repository --repository-name tap-build-service --region $AWS_REGION --no-cli-pager
 
 
 # 6. RBAC FOR ECR FROM EKS CLUSTER
 echo "CREATING IAM ROLES FOR ECR"
 
-oidcProvider=$(aws eks describe-cluster --name $tap_full_cluster --region $AWS_REGION_CODE | jq '.cluster.identity.oidc.issuer' | tr -d '"' | sed 's/https:\/\///')
+oidcProvider=$(aws eks describe-cluster --name $EKS_CLUSTER_NAME --region $AWS_REGION | jq '.cluster.identity.oidc.issuer' | tr -d '"' | sed 's/https:\/\///')
 
 cat <<EOF > build-service-trust-policy.json
 {
@@ -219,8 +221,8 @@ cat <<EOF > build-service-policy.json
                 "ecr:SetRepositoryPolicy"
             ],
             "Resource": [
-                "arn:aws:ecr:${AWS_REGION_CODE}:${AWS_ACCOUNT_ID}:repository/tap-build-service",
-                "arn:aws:ecr:${AWS_REGION_CODE}:${AWS_ACCOUNT_ID}:repository/tap-images"
+                "arn:aws:ecr:${AWS_REGION}:${AWS_ACCOUNT_ID}:repository/tap-build-service",
+                "arn:aws:ecr:${AWS_REGION}:${AWS_ACCOUNT_ID}:repository/tap-images"
             ],
             "Effect": "Allow",
             "Sid": "TAPEcrBuildServiceScoped"
@@ -307,11 +309,11 @@ cat <<EOF > workload-policy.json
                 "ecr:SetRepositoryPolicy"
             ],
             "Resource": [
-                "arn:aws:ecr:${AWS_REGION_CODE}:${AWS_ACCOUNT_ID}:repository/tap-build-service",
-                "arn:aws:ecr:${AWS_REGION_CODE}:${AWS_ACCOUNT_ID}:repository/tanzu-application-platform/tanzu-java-web-app",
-                "arn:aws:ecr:${AWS_REGION_CODE}:${AWS_ACCOUNT_ID}:repository/tanzu-application-platform/tanzu-java-web-app-bundle",
-                "arn:aws:ecr:${AWS_REGION_CODE}:${AWS_ACCOUNT_ID}:repository/tanzu-application-platform",
-                "arn:aws:ecr:${AWS_REGION_CODE}:${AWS_ACCOUNT_ID}:repository/tanzu-application-platform/*"
+                "arn:aws:ecr:${AWS_REGION}:${AWS_ACCOUNT_ID}:repository/tap-build-service",
+                "arn:aws:ecr:${AWS_REGION}:${AWS_ACCOUNT_ID}:repository/tanzu-application-platform/tanzu-java-web-app",
+                "arn:aws:ecr:${AWS_REGION}:${AWS_ACCOUNT_ID}:repository/tanzu-application-platform/tanzu-java-web-app-bundle",
+                "arn:aws:ecr:${AWS_REGION}:${AWS_ACCOUNT_ID}:repository/tanzu-application-platform",
+                "arn:aws:ecr:${AWS_REGION}:${AWS_ACCOUNT_ID}:repository/tanzu-application-platform/*"
             ],
             "Effect": "Allow",
             "Sid": "TAPEcrWorkloadScoped"
@@ -320,19 +322,19 @@ cat <<EOF > workload-policy.json
 }
 EOF
 
-aws iam delete-role-policy --role-name tap-build-service --policy-name tapBuildServicePolicy
-aws iam delete-role-policy --role-name tap-workload --policy-name tapWorkload
+aws iam delete-role-policy --role-name tap-build-service --policy-name tapBuildServicePolicy --no-cli-pager
+aws iam delete-role-policy --role-name tap-workload --policy-name tapWorkload --no-cli-pager
 
-aws iam delete-role --role-name tap-build-service
-aws iam delete-role --role-name tap-workload
+aws iam delete-role --role-name tap-build-service --no-cli-pager
+aws iam delete-role --role-name tap-workload --no-cli-pager
 
 # Create the Build Service Role
-aws iam create-role --role-name tap-build-service --assume-role-policy-document file://build-service-trust-policy.json
-aws iam put-role-policy --role-name tap-build-service --policy-name tapBuildServicePolicy --policy-document file://build-service-policy.json
+aws iam create-role --role-name tap-build-service --assume-role-policy-document file://build-service-trust-policy.json --no-cli-pager
+aws iam put-role-policy --role-name tap-build-service --policy-name tapBuildServicePolicy --policy-document file://build-service-policy.json --no-cli-pager
 
 # Create the Workload Role
-aws iam create-role --role-name tap-workload --assume-role-policy-document file://workload-trust-policy.json
-aws iam put-role-policy --role-name tap-workload --policy-name tapWorkload --policy-document file://workload-policy.json
+aws iam create-role --role-name tap-workload --assume-role-policy-document file://workload-trust-policy.json --no-cli-pager
+aws iam put-role-policy --role-name tap-workload --policy-name tapWorkload --policy-document file://workload-policy.json --no-cli-pager
 
 rm build-service-trust-policy.json
 rm build-service-policy.json
@@ -346,6 +348,7 @@ echo "INSTALLING TANZU AND CLUSTER ESSENTIALS"
 rm -rf $HOME/tanzu
 mkdir $HOME/tanzu
 
+https://network.pivotal.io/api/v2/products/tanzu-application-platform/releases/1260043/product_files/1433868/download
 wget https://network.tanzu.vmware.com/api/v2/products/tanzu-application-platform/releases/1250091/product_files/1423948/download --header="Authorization: Bearer ${access_token}" -O $HOME/tanzu/${cli_filename}
 tar -xvf $HOME/tanzu/${cli_filename} -C $HOME/tanzu
 
@@ -362,13 +365,15 @@ cd $HOME
 rm -rf $HOME/tanzu-cluster-essentials
 mkdir $HOME/tanzu-cluster-essentials
 
+https://network.pivotal.io/api/v2/products/tanzu-cluster-essentials/releases/1249982/product_files/1423994/download
 wget https://network.tanzu.vmware.com/api/v2/products/tanzu-cluster-essentials/releases/1249982/product_files/1423994/download --header="Authorization: Bearer ${access_token}" -O $HOME/tanzu-cluster-essentials/${essentials_filename}
 tar -xvf $HOME/tanzu-cluster-essentials/${essentials_filename} -C $HOME/tanzu-cluster-essentials
 
-export INSTALL_BUNDLE=registry.tanzu.vmware.com/tanzu-cluster-essentials/cluster-essentials-bundle@sha256:54bf611711923dccd7c7f10603c846782b90644d48f1cb570b43a082d18e23b9
+export INSTALL_BUNDLE=registry.tanzu.vmware.com/tanzu-cluster-essentials/cluster-essentials-bundle@sha256:2354688e46d4bb4060f74fca069513c9b42ffa17a0a6d5b0dbb81ed52242ea44
 export INSTALL_REGISTRY_HOSTNAME=registry.tanzu.vmware.com
 export INSTALL_REGISTRY_USERNAME=$PIVNET_USERNAME
 export INSTALL_REGISTRY_PASSWORD=$pivnet_password
+
 cd $HOME/tanzu-cluster-essentials
 
 ./install.sh --yes
@@ -387,14 +392,17 @@ rm $HOME/tanzu-cluster-essentials/${essentials_filename}
 # 8. IMPORT TAP PACKAGES
 echo "IMPORTING TAP PACKAGES"
 
-aws ecr get-login-password --region $AWS_REGION_CODE | docker login --username AWS --password-stdin $target_registry
+export INSTALL_REGISTRY_HOSTNAME=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+export INSTALL_REPO=tap-images
 
-imgpkg copy --concurrency 1 -b registry.tanzu.vmware.com/tanzu-application-platform/tap-packages:${tap_version} --to-repo ${target_registry}/${target_repo}
+aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $INSTALL_REGISTRY_HOSTNAME
+
+imgpkg copy --concurrency 1 -b registry.tanzu.vmware.com/tanzu-application-platform/tap-packages:${TAP_VERSION} --to-repo ${INSTALL_REGISTRY_HOSTNAME}/${INSTALL_REPO}
 
 kubectl create ns tap-install
 
 tanzu package repository add tanzu-tap-repository \
-  --url ${target_registry}/${target_repo}:$tap_version \
+  --url ${INSTALL_REGISTRY_HOSTNAME}/${INSTALL_REPO}:$TAP_VERSION \
   --namespace tap-install
 
 #tanzu package repository get tanzu-tap-repository --namespace tap-install
@@ -403,10 +411,6 @@ tanzu package repository add tanzu-tap-repository \
 
 # 9. INSTALL FULL TAP PROFILE
 echo "INSTALLING FULL TAP PROFILE"
-
-export INSTALL_REGISTRY_HOSTNAME=registry.tanzu.vmware.com
-export INSTALL_REGISTRY_USERNAME=mjames@pivotal.io
-export INSTALL_REGISTRY_PASSWORD=$pivnet_password
 
 #APPEND GUI SETTINGS
 rm tap-values-full.yaml
@@ -418,10 +422,15 @@ shared:
 supply_chain: basic
 ootb_supply_chain_basic:
   registry:
-    server: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION_CODE}.amazonaws.com
+    server: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
     repository: "tanzu-application-platform"
+  gitops:
+    ssh_secret: "" # (Optional) Defaults to "".
+  cluster_builder: default
+  service_account: default
+
 buildservice:
-  kp_default_repository: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION_CODE}.amazonaws.com/${target_tbs_repo}
+  kp_default_repository: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${target_tbs_repo}
   kp_default_repository_aws_iam_role_arn: "arn:aws:iam::${AWS_ACCOUNT_ID}:role/${target_tbs_repo}"
 contour:
   infrastructure_provider: aws
@@ -453,7 +462,7 @@ excluded_packages:
   - policy.apps.tanzu.vmware.com
 EOF
 
-tanzu package install tap -p tap.tanzu.vmware.com -v $tap_version --values-file tap-values-full.yaml -n tap-install
+tanzu package install tap -p tap.tanzu.vmware.com -v $TAP_VERSION --values-file tap-values-full.yaml -n tap-install
 #tanzu package installed get tap -n tap-install
 #tanzu package installed list -A
 
@@ -461,7 +470,7 @@ tanzu package install tap -p tap.tanzu.vmware.com -v $tap_version --values-file 
 # 10. DEVELOPER NAMESPACE
 echo "CREATING DEVELOPER NAMESPACE"
 
-tanzu secret registry add registry-credentials --server ${target_registry} --username "AWS" --password "${target_registry}" --namespace default
+tanzu secret registry add registry-credentials --server ${INSTALL_REGISTRY_HOSTNAME} --username "AWS" --password "${INSTALL_REGISTRY_HOSTNAME}" --namespace default
 
 cat <<EOF | kubectl -n default apply -f -
 apiVersion: v1

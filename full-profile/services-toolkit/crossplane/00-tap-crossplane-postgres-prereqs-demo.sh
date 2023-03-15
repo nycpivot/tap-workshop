@@ -26,14 +26,7 @@ clear
 
 DEMO_PROMPT="${GREEN}➜ HELM ${CYAN}\W "
 
-read -p "AWS Region Code (us-west-1): " aws_region_code
-
-if [[ -z $aws_region_code ]]
-then
-	aws_region_code=us-west-1
-fi
-
-kubectl config use-context tap-run
+kubectl config use-context tap-full
 echo
 
 #INSTALL CROSSPLANE IN NAMESPACE
@@ -171,7 +164,7 @@ spec:
          engineVersion: "12"
          masterUsername: masteruser
          publiclyAccessible: true
-         region: $aws_region_code
+         region: $AWS_REGION
          skipFinalSnapshotBeforeDeletion: true
        writeConnectionSecretToRef:
          namespace: crossplane-system
@@ -310,4 +303,3 @@ pe "tanzu services resource-claims list -o wide"
 echo
 
 
-services.apps.tanzu.vmware.com/v1alpha1:ResourceClaim:rds-claim

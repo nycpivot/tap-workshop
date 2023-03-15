@@ -1,4 +1,4 @@
-# TAP Workshop - Full Profile
+# FULL PROFILE
 
 A full profile will install all TAP components on a single cluster. Run [01-tap-full-eks.sh](01-tap-full-eks.sh) to install the following components.
 
@@ -42,6 +42,12 @@ Defines the namespace(s) for running workloads and secrets for pulling images fr
 
 This section retrieves the address of the ELB to get the corresponding IP address, which is used to update the A record of the first zone retrieved.
 
+
 ## TAP GUI
 
 A URL will be output to open tap-gui in the browser.
+
+
+## SERVICES TOOLKIT
+
+

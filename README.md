@@ -8,7 +8,7 @@ This repository offers application developers and operators practical examples f
 
 * Ubuntu Linux
 
-### Run [tanzu-operator-prereqs.sh](tanzu-operator-prereqs.sh) to install the following tools.
+Run [tanzu-operator-prereqs.sh](tanzu-operator-prereqs.sh) to install the following tools.
 
 * Docker
 * AWS CLI

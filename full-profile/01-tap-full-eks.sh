@@ -1,7 +1,11 @@
 #!/bin/bash
 
-read -p "DNS Zone Id: " hosted_zone_id
 read -p "Full Domain Name: " full_domain
+
+export EKS_CLUSTER_NAME=tap-full
+export TANZU_CLI_NO_INIT=true
+export VERSION=v0.25.4
+export TAP_VERSION=1.4.2
 
 target_tbs_repo=tap-build-service
 git_catalog_repository=tanzu-application-platform
@@ -9,13 +13,8 @@ git_catalog_repository=tanzu-application-platform
 cli_filename=tanzu-framework-linux-amd64-v0.25.4.5.tar
 essentials_filename=tanzu-cluster-essentials-linux-amd64-1.4.1.tgz
 
-export EKS_CLUSTER_NAME=tap-full
-export TANZU_CLI_NO_INIT=true
-export VERSION=v0.25.4
-export TAP_VERSION=1.4.2
 
-
-# 1. FETCH PIVNET SECRETS
+# 1. CAPTURE PIVNET SECRETS
 echo "RETRIEVING SECRETS FOR PIVNET REGISTRY"
 
 pivnet_password=$(aws secretsmanager get-secret-value --secret-id $PIVNET_USERNAME | jq -r .SecretString | jq -r .\"pivnet_password\")
@@ -34,10 +33,6 @@ aws cloudformation wait stack-create-complete --stack-name tap-workshop-singlecl
 
 #eksctl create cluster --name $EKS_CLUSTER_NAME --managed --region $AWS_REGION --instance-types t3.xlarge --version 1.23 --with-oidc -N 5
 
-
-# 3. UPDATE KUBECONFIG
-echo "UPDATING KUBECONFIG"
-
 rm .kube/config
 
 arn=arn:aws:eks:${AWS_REGION}:${AWS_ACCOUNT_ID}:cluster
@@ -49,7 +44,7 @@ kubectl config rename-context ${arn}/${EKS_CLUSTER_NAME} $EKS_CLUSTER_NAME
 kubectl config use-context $EKS_CLUSTER_NAME
 
 
-# 4. INSTALL CSI PLUGIN
+# 3. INSTALL CSI PLUGIN
 echo "INSTALLING CSI PLUGIN"
 
 rolename=${EKS_CLUSTER_NAME}-csi-driver-role
@@ -126,17 +121,17 @@ kubectl annotate serviceaccount ebs-csi-controller-sa \
 rm aws-ebs-csi-driver-trust-policy.json
 
 
-# 5. CREATE ECRs
+# 4. CREATE ECRs
 echo "CREATING ECRs"
 
 aws ecr create-repository --repository-name tap-images --region $AWS_REGION --no-cli-pager
 aws ecr create-repository --repository-name tap-build-service --region $AWS_REGION --no-cli-pager
 
 
-# 6. RBAC FOR ECR FROM EKS CLUSTER
+# 5. RBAC FOR ECR FROM EKS CLUSTER
 echo "CREATING IAM ROLES FOR ECR"
 
-oidcProvider=$(aws eks describe-cluster --name $EKS_CLUSTER_NAME --region $AWS_REGION | jq '.cluster.identity.oidc.issuer' | tr -d '"' | sed 's/https:\/\///')
+export OIDCPROVIDER=$(aws eks describe-cluster --name $EKS_CLUSTER_NAME --region $AWS_REGION | jq '.cluster.identity.oidc.issuer' | tr -d '"' | sed 's/https:\/\///')
 
 cat <<EOF > build-service-trust-policy.json
 {
@@ -145,15 +140,15 @@ cat <<EOF > build-service-trust-policy.json
         {
             "Effect": "Allow",
             "Principal": {
-                "Federated": "arn:aws:iam::${AWS_ACCOUNT_ID}:oidc-provider/${oidcProvider}"
+                "Federated": "arn:aws:iam::${AWS_ACCOUNT_ID}:oidc-provider/${OIDCPROVIDER}"
             },
             "Action": "sts:AssumeRoleWithWebIdentity",
             "Condition": {
                 "StringEquals": {
-                    "${oidcProvider}:aud": "sts.amazonaws.com"
+                    "${OIDCPROVIDER}:aud": "sts.amazonaws.com"
                 },
                 "StringLike": {
-                    "${oidcProvider}:sub": [
+                    "${OIDCPROVIDER}:sub": [
                         "system:serviceaccount:kpack:controller",
                         "system:serviceaccount:build-service:dependency-updater-controller-serviceaccount"
                     ]
@@ -238,13 +233,13 @@ cat <<EOF > workload-trust-policy.json
         {
             "Effect": "Allow",
             "Principal": {
-                "Federated": "arn:aws:iam::${AWS_ACCOUNT_ID}:oidc-provider/${oidcProvider}"
+                "Federated": "arn:aws:iam::${AWS_ACCOUNT_ID}:oidc-provider/${OIDCPROVIDER}"
             },
             "Action": "sts:AssumeRoleWithWebIdentity",
             "Condition": {
                 "StringEquals": {
-                    "${oidcProvider}:sub": "system:serviceaccount:default:default",
-                    "${oidcProvider}:aud": "sts.amazonaws.com"
+                    "${OIDCPROVIDER}:sub": "system:serviceaccount:default:default",
+                    "${OIDCPROVIDER}:aud": "sts.amazonaws.com"
                 }
             }
         }
@@ -342,14 +337,13 @@ rm workload-trust-policy.json
 rm workload-policy.json
 
 
-# 7. TANZU PREREQS
+# 6. TANZU PREREQS
 echo "INSTALLING TANZU AND CLUSTER ESSENTIALS"
 
 rm -rf $HOME/tanzu
 mkdir $HOME/tanzu
 
-https://network.pivotal.io/api/v2/products/tanzu-application-platform/releases/1260043/product_files/1433868/download
-wget https://network.tanzu.vmware.com/api/v2/products/tanzu-application-platform/releases/1250091/product_files/1423948/download --header="Authorization: Bearer ${access_token}" -O $HOME/tanzu/${cli_filename}
+wget https://network.pivotal.io/api/v2/products/tanzu-application-platform/releases/1260043/product_files/1433868/download --header="Authorization: Bearer ${access_token}" -O $HOME/tanzu/${cli_filename}
 tar -xvf $HOME/tanzu/${cli_filename} -C $HOME/tanzu
 
 cd tanzu
@@ -365,8 +359,7 @@ cd $HOME
 rm -rf $HOME/tanzu-cluster-essentials
 mkdir $HOME/tanzu-cluster-essentials
 
-https://network.pivotal.io/api/v2/products/tanzu-cluster-essentials/releases/1249982/product_files/1423994/download
-wget https://network.tanzu.vmware.com/api/v2/products/tanzu-cluster-essentials/releases/1249982/product_files/1423994/download --header="Authorization: Bearer ${access_token}" -O $HOME/tanzu-cluster-essentials/${essentials_filename}
+wget https://network.pivotal.io/api/v2/products/tanzu-cluster-essentials/releases/1249982/product_files/1423994/download --header="Authorization: Bearer ${access_token}" -O $HOME/tanzu-cluster-essentials/${essentials_filename}
 tar -xvf $HOME/tanzu-cluster-essentials/${essentials_filename} -C $HOME/tanzu-cluster-essentials
 
 export INSTALL_BUNDLE=registry.tanzu.vmware.com/tanzu-cluster-essentials/cluster-essentials-bundle@sha256:2354688e46d4bb4060f74fca069513c9b42ffa17a0a6d5b0dbb81ed52242ea44
@@ -389,7 +382,7 @@ rm $HOME/tanzu/${cli_filename}
 rm $HOME/tanzu-cluster-essentials/${essentials_filename}
 
 
-# 8. IMPORT TAP PACKAGES
+# 7. IMPORT TAP PACKAGES
 echo "IMPORTING TAP PACKAGES"
 
 export INSTALL_REGISTRY_HOSTNAME=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
@@ -409,7 +402,7 @@ tanzu package repository add tanzu-tap-repository \
 #tanzu package available list --namespace tap-install
 #tanzu package available list tap.tanzu.vmware.com --namespace tap-install
 
-# 9. INSTALL FULL TAP PROFILE
+# 8. INSTALL FULL TAP PROFILE
 echo "INSTALLING FULL TAP PROFILE"
 
 #APPEND GUI SETTINGS
@@ -424,11 +417,6 @@ ootb_supply_chain_basic:
   registry:
     server: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
     repository: "tanzu-application-platform"
-  gitops:
-    ssh_secret: "" # (Optional) Defaults to "".
-  cluster_builder: default
-  service_account: default
-
 buildservice:
   kp_default_repository: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${target_tbs_repo}
   kp_default_repository_aws_iam_role_arn: "arn:aws:iam::${AWS_ACCOUNT_ID}:role/${target_tbs_repo}"
@@ -467,31 +455,18 @@ tanzu package install tap -p tap.tanzu.vmware.com -v $TAP_VERSION --values-file 
 #tanzu package installed list -A
 
 
-# 10. DEVELOPER NAMESPACE
+# 9. DEVELOPER NAMESPACE
 echo "CREATING DEVELOPER NAMESPACE"
 
 tanzu secret registry add registry-credentials --server ${INSTALL_REGISTRY_HOSTNAME} --username "AWS" --password "${INSTALL_REGISTRY_HOSTNAME}" --namespace default
 
 cat <<EOF | kubectl -n default apply -f -
 apiVersion: v1
-kind: Secret
-metadata:
-  name: tap-registry
-  annotations:
-    secretgen.carvel.dev/image-pull-secret: ""
-type: kubernetes.io/dockerconfigjson
-data:
-  .dockerconfigjson: e30K
----
-apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: default
-secrets:
-  - name: registry-credentials
-imagePullSecrets:
-  - name: registry-credentials
-  - name: tap-registry
+  annotations:
+    eks.amazonaws.com/role-arn: "arn:aws:iam::${AWS_ACCOUNT_ID}:role/tap-workload"
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -519,7 +494,7 @@ subjects:
 EOF
 
 
-# 11. CONFIGURE DNS NAME WITH ELB IP
+# 10. CONFIGURE DNS NAME WITH ELB IP
 echo "CONFIGURING DNS"
 
 kubectl get svc -n tanzu-system-ingress
@@ -551,6 +526,7 @@ cat <<EOF | tee change-batch.json
 }
 EOF
 
+hosted_zone_id=$(aws route53 list-hosted-zones --query HostedZones[0].Id --output text | awk -F '/' '{print $3}')
 aws route53 change-resource-record-sets --hosted-zone-id $hosted_zone_id --change-batch file:///$HOME/change-batch.json
 
 echo

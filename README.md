@@ -2,18 +2,18 @@
 
 This repository offers application developers and operators practical examples for getting started with TAP (Tanzu Application Platform). The following is a common set of use-cases most applications will encounter.
 
-* [TAP Services Toolkit](https://docs.vmware.com/en/Services-Toolkit-for-VMware-Tanzu-Application-Platform/index.html), used for the creation and underlying infrastructure to host backend services, such as, databases, message queues, caches, and making them easily discoverable to developers for integration and consumption.
+* [TAP Services Toolkit](https://docs.vmware.com/en/Services-Toolkit-for-VMware-Tanzu-Application-Platform/index.html), used to make backend services, such as, databases, caches, queues, and more, easily discoverable across numerous disparate platforms and to bind the connection details to application workloads.
 
 ## Prerequisites
 
 * Ubuntu Linux
-* AWS CLI
-* Kubernetes cluster (minimum version 1.23)
-* TAP (version 1.4 or higher)
-* Tanzu CLI and plugins
-* Domain name, subdomains with wildcard
 
-All of these, with the exception of Ubuntu, are included in the script
+### Run [tanzu-operator-prereqs.sh](tanzu-operator-prereqs.sh) to install the following tools.
+
+* Docker
+* AWS CLI
+* kubectl (1.23)
+* Miscellaneous tools (helm, jq)
 
 ## Getting Started
 

@@ -52,7 +52,13 @@ echo
 pe "tanzu apps workload delete ${app_name} --yes"
 echo
 
-pe "tanzu apps workload create ${app_name} --git-repo ${git_app_url} --git-branch main --type web --label app.kubernetes.io/part-of=${app_name} --annotation autoscaling.knative.dev/minScale=1 --env SPRING_PROFILES_ACTIVE=postgres --service-ref db=services.apps.tanzu.vmware.com/v1alpha1:ResourceClaim:rds-claim --yes"
+pe "service_ref=$(kubectl get resourceclaim rds-claim -o jsonpath='{.apiVersion}')"
+echo
+
+pe "claim_name=$(kubectl get resourceclaim rds-claim -o jsonpath='{.metadata.name}')"
+echo
+
+pe "tanzu apps workload create ${app_name} --git-repo ${git_app_url} --git-branch main --type web --label app.kubernetes.io/part-of=${app_name} --annotation autoscaling.knative.dev/minScale=1 --env SPRING_PROFILES_ACTIVE=postgres --service-ref db=${service_ref}:ResourceClaim:${claim_name} --yes"
 echo
 
 pe "clear"

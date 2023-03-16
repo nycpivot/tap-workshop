@@ -8,12 +8,12 @@ kubectl delete PostgreSQLInstance rds-postgres-db
 kubectl delete Composition xpostgresqlinstances.bindable.aws.database.example.org
 kubectl delete CompositeResourceDefinition xpostgresqlinstances.bindable.database.example.org
 kubectl delete ProviderConfig default
+kubectl delete secret aws-provider-creds -n crossplane-system
 kubectl delete Provider provider-aws
 
-helm uninstall crossplane
-helm repo uninstall crossplane-stable
+helm uninstall crossplane -n crossplane-system
+helm repo remove crossplane-stable
 
 kubectl delete ns crossplane-system
 
 tanzu apps workload delete $APP_NAME --yes
-

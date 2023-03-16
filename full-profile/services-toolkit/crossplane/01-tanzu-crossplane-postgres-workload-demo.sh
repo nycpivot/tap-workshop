@@ -43,10 +43,8 @@ echo
 pe "tanzu services resource-claims list -o wide"
 echo
 
-pe "service_ref=$(kubectl get resourceclaim rds-claim -o jsonpath='{.apiVersion}')"
-echo
-
-pe "claim_name=$(kubectl get resourceclaim rds-claim -o jsonpath='{.metadata.name}')"
+service_ref=$(kubectl get resourceclaim rds-claim -o jsonpath='{.apiVersion}')
+claim_name=$(kubectl get resourceclaim rds-claim -o jsonpath='{.metadata.name}')
 echo
 
 pe "tanzu apps workload create $APP_NAME --git-repo $GIT_APP_URL --git-branch main --type web --label app.kubernetes.io/part-of=$APP_NAME --annotation autoscaling.knative.dev/minScale=1 --env SPRING_PROFILES_ACTIVE=postgres --service-ref db=${service_ref}:ResourceClaim:${claim_name} --yes"

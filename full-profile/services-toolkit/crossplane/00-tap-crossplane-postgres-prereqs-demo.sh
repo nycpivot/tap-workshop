@@ -66,7 +66,8 @@ echo
 #EXTRACT AWS CREDS TO CREATE A FILE, USED TO CREATE A SECRET THAT PROVIDER CONFIG BELOW WILL BE ABLE TO USE TO CREATE RESOURCES
 echo -e "[default]\naws_access_key_id = $(aws configure get aws_access_key_id)\naws_secret_access_key = $(aws configure get aws_secret_access_key)\naws_session_token = $(aws configure get aws_session_token)" > creds.conf
 
-kubectl create secret generic aws-provider-creds -n crossplane-system --from-file=creds=./creds.conf
+pe "kubectl create secret generic aws-provider-creds -n crossplane-system --from-file=creds=./creds.conf"
+echo
 
 rm -f creds.conf
 

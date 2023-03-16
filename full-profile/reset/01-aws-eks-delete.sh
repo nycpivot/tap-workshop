@@ -11,7 +11,7 @@ aws ecr delete-repository --repository-name tap-build-service --region $AWS_REGI
 aws ecr delete-repository --repository-name tanzu-application-platform/tanzu-java-web-app-default --region $AWS_REGION --force
 aws ecr delete-repository --repository-name tanzu-application-platform/tanzu-java-web-app-default-bundle --region $AWS_REGION --force
 
-sleep 300
+sleep 600
 
 aws cloudformation delete-stack --stack-name tap-workshop-singlecluster-stack --region $AWS_REGION
 aws cloudformation wait stack-delete-complete --stack-name tap-workshop-singlecluster-stack --region $AWS_REGION

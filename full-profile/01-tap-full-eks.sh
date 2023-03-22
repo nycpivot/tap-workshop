@@ -28,10 +28,10 @@ curl -i -H "Accept: application/json" -H "Content-Type: application/json" -H "Au
 # 2. CLOUD FORMATION (VPC, EKS)
 echo "RUNNING CLOUDFORMATION TEMPLATE"
 
-aws cloudformation create-stack --stack-name tap-workshop-singlecluster-stack --region $AWS_REGION --template-body file:///home/ubuntu/tap-workshop/full-profile/config/tap-singlecluster-stack.yaml
-aws cloudformation wait stack-create-complete --stack-name tap-workshop-singlecluster-stack --region $AWS_REGION
+#aws cloudformation create-stack --stack-name tap-workshop-singlecluster-stack --region $AWS_REGION --template-body file:///home/ubuntu/tap-workshop/full-profile/config/tap-singlecluster-stack.yaml
+#aws cloudformation wait stack-create-complete --stack-name tap-workshop-singlecluster-stack --region $AWS_REGION
 
-#eksctl create cluster --name $EKS_CLUSTER_NAME --managed --region $AWS_REGION --instance-types t3.xlarge --version 1.23 --with-oidc -N 5
+eksctl create cluster --name $EKS_CLUSTER_NAME --managed --region $AWS_REGION --instance-types t3.xlarge --version 1.23 --with-oidc -N 5
 
 rm .kube/config
 

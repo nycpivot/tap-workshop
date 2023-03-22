@@ -405,7 +405,7 @@ tanzu package repository add tanzu-tap-repository \
 # 8. INSTALL FULL TAP PROFILE
 echo "INSTALLING FULL TAP PROFILE"
 
-#APPEND GUI SETTINGS
+#INSTALL TAP
 rm tap-values-full.yaml
 cat <<EOF | tee tap-values-full.yaml
 profile: full

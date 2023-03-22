@@ -98,8 +98,8 @@ Resources:
       DiskSize: 80
       ScalingConfig:
         MinSize: 2
-        DesiredSize: 6
-        MaxSize: 6
+        DesiredSize: 4
+        MaxSize: 4
       Subnets:
         - !Ref PublicSubnetB
         - !Ref PublicSubnetC

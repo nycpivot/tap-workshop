@@ -27,13 +27,12 @@ clear
 DEMO_PROMPT="${GREEN}➜ TAP ${CYAN}\W "
 
 app_name=tanzu-java-web-app
+git_app_url=https://github.com/nycpivot/${app_name}
 
 kubectl config get-contexts
 echo
 
 read -p "Select build context: " kube_context
-
-git_app_url=https://github.com/nycpivot/${app_name}
 
 kubectl config use-context $kube_context
 echo
@@ -50,7 +49,7 @@ echo
 
 pe "clear"
 
-pe "tanzu apps workload create $app_name --git-repo ${git_app_url} --git-branch main --type web --annotation autoscaling.knative.dev/min-scale=2 --label app.kubernetes.io/part-of=$app_name --yes"
+pe "tanzu apps workload create $app_name --git-repo ${git_app_url} --git-branch main --type web --annotation autoscaling.knative.dev/min-scale=2 --label apps.tanzu.vmware.com/has-tests=true --label app.kubernetes.io/part-of=$app_name --yes"
 echo
 
 pe "clear"
@@ -65,3 +64,10 @@ pe "tanzu apps workload get $app_name"
 echo
 
 echo http://${app_name}.default.full.tap.nycpivot.com
+echo
+
+pe "tanzu insight image get --digest DIGEST"
+echo
+
+pe "tanzu insight image vulnerabilities --digest DIGEST"
+echo

@@ -406,8 +406,8 @@ tanzu package repository add tanzu-tap-repository \
 echo "INSTALLING FULL TAP PROFILE"
 
 #INSTALL TAP
-rm tap-values-full.yaml
-cat <<EOF | tee tap-values-full.yaml
+rm tap-values-full-basic.yaml
+cat <<EOF | tee tap-values-full-basic.yaml
 profile: full
 ceip_policy_disclosed: true
 shared:
@@ -450,7 +450,7 @@ excluded_packages:
   - policy.apps.tanzu.vmware.com
 EOF
 
-tanzu package install tap -p tap.tanzu.vmware.com -v $TAP_VERSION --values-file tap-values-full.yaml -n tap-install
+tanzu package install tap -p tap.tanzu.vmware.com -v $TAP_VERSION --values-file tap-values-full-basic.yaml -n tap-install
 #tanzu package installed get tap -n tap-install
 #tanzu package installed list -A
 

@@ -8,8 +8,8 @@ export EKS_CLUSTER_NAME=tap-full
 #aws elb delete-load-balancer --load-balancer-name $classic_lb
 #aws elbv2 delete-load-balancer --load-balancer-arn $network_lb
 
-aws ecr delete-repository --repository-name tap-images --region $AWS_REGION --force
-aws ecr delete-repository --repository-name tap-build-service --region $AWS_REGION --force
+#aws ecr delete-repository --repository-name tap-images --region $AWS_REGION --force
+#aws ecr delete-repository --repository-name tap-build-service --region $AWS_REGION --force
 aws ecr delete-repository --repository-name tanzu-application-platform/tanzu-java-web-app-default --region $AWS_REGION --force
 aws ecr delete-repository --repository-name tanzu-application-platform/tanzu-java-web-app-default-bundle --region $AWS_REGION --force
 

@@ -458,7 +458,11 @@ tanzu package install tap -p tap.tanzu.vmware.com -v $TAP_VERSION --values-file 
 # 9. DEVELOPER NAMESPACE
 echo "CREATING DEVELOPER NAMESPACE"
 
-tanzu secret registry add registry-credentials --server ${INSTALL_REGISTRY_HOSTNAME} --username "AWS" --password "${INSTALL_REGISTRY_HOSTNAME}" --namespace default
+tanzu secret registry add registry-credentials \
+  --server ${INSTALL_REGISTRY_HOSTNAME} \
+  --username "AWS" \
+  --password "${INSTALL_REGISTRY_HOSTNAME}" \
+  --namespace default
 
 cat <<EOF | kubectl -n default apply -f -
 apiVersion: v1

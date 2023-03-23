@@ -121,13 +121,6 @@ kubectl annotate serviceaccount ebs-csi-controller-sa \
 rm aws-ebs-csi-driver-trust-policy.json
 
 
-# 4. CREATE ECRs
-echo "CREATING ECRs"
-
-aws ecr create-repository --repository-name tap-images --region $AWS_REGION --no-cli-pager
-aws ecr create-repository --repository-name tap-build-service --region $AWS_REGION --no-cli-pager
-
-
 # 5. RBAC FOR ECR FROM EKS CLUSTER
 echo "CREATING IAM ROLES FOR ECR"
 
@@ -388,9 +381,21 @@ echo "IMPORTING TAP PACKAGES"
 export INSTALL_REGISTRY_HOSTNAME=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
 export INSTALL_REPO=tap-images
 
+tap_images_ecr=$(aws ecr describe-repositories --query "repositories[?repositoryName=='tap-images'].repositoryName" --output text)
+tap_build_service_ecr=$(aws ecr describe-repositories --query "repositories[?repositoryName=='tap-build-service'].repositoryName" --output text)
+
 aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $INSTALL_REGISTRY_HOSTNAME
 
-imgpkg copy --concurrency 1 -b registry.tanzu.vmware.com/tanzu-application-platform/tap-packages:${TAP_VERSION} --to-repo ${INSTALL_REGISTRY_HOSTNAME}/${INSTALL_REPO}
+if [[ -z $tap_images_ecr ]]
+then
+  aws ecr create-repository --repository-name $INSTALL_REPO --region $AWS_REGION --no-cli-pager
+  imgpkg copy --concurrency 1 -b registry.tanzu.vmware.com/tanzu-application-platform/tap-packages:${TAP_VERSION} --to-repo ${INSTALL_REGISTRY_HOSTNAME}/${INSTALL_REPO}
+fi
+
+if [[ -z $tap_build_service_ecr ]]
+then
+  aws ecr create-repository --repository-name $target_tbs_repo --region $AWS_REGION --no-cli-pager
+fi
 
 kubectl create ns tap-install
 

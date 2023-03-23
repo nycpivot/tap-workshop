@@ -1,10 +1,9 @@
 #!/bin/bash
 
-read -p "Full Domain Name: " full_domain
-
 export EKS_CLUSTER_NAME=tap-full
 export TAP_VERSION=1.4.2
 
+full_domain=full.tap.nycpivot.com
 target_tbs_repo=tap-build-service
 git_catalog_repository=tanzu-application-platform
 
@@ -75,10 +74,6 @@ metadata:
   name: default
   annotations:
     eks.amazonaws.com/role-arn: "arn:aws:iam::${AWS_ACCOUNT_ID}:role/tap-workload"
-secrets:
-  - name: registry-credentials
-imagePullSecrets:
-  - name: registry-credentials
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding

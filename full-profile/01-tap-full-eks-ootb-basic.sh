@@ -507,12 +507,8 @@ EOF
 # 10. CONFIGURE DNS NAME WITH ELB IP
 echo "CONFIGURING DNS"
 
-kubectl get svc -n tanzu-system-ingress
-
-read -p "Tanzu System Ingress IP: " external_ip
-
-nslookup $external_ip
-read -p "IP Address: " ip_address
+ingress=$(kubectl get svc envoy -n tanzu-system-ingress -o json | jq -r .status.loadBalancer.ingress[].hostname)
+ip_address=$(nslookup $ingress | awk '/^Address:/ {A=$2}; END {print A}')
 
 rm change-batch.json
 cat <<EOF | tee change-batch.json

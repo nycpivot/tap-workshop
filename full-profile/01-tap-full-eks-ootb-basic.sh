@@ -31,7 +31,7 @@ echo "RUNNING CLOUDFORMATION TEMPLATE"
 #aws cloudformation create-stack --stack-name tap-workshop-singlecluster-stack --region $AWS_REGION --template-body file:///home/ubuntu/tap-workshop/full-profile/config/tap-singlecluster-stack.yaml
 #aws cloudformation wait stack-create-complete --stack-name tap-workshop-singlecluster-stack --region $AWS_REGION
 
-eksctl create cluster --name $EKS_CLUSTER_NAME --managed --region $AWS_REGION --instance-types t3.xlarge --version 1.23 --with-oidc -N 5
+eksctl create cluster --name $EKS_CLUSTER_NAME --managed --region $AWS_REGION --instance-types t3.xlarge --version 1.23 --with-oidc -N 3
 
 rm .kube/config
 
@@ -411,8 +411,8 @@ tanzu package repository add tanzu-tap-repository \
 echo "INSTALLING FULL TAP PROFILE"
 
 #INSTALL TAP
-rm tap-values-full-basic.yaml
-cat <<EOF | tee tap-values-full-basic.yaml
+rm tap-values-full-ootb-basic.yaml
+cat <<EOF | tee tap-values-full-ootb-basic.yaml
 profile: full
 ceip_policy_disclosed: true
 shared:
@@ -455,12 +455,13 @@ excluded_packages:
   - policy.apps.tanzu.vmware.com
 EOF
 
-tanzu package install tap -p tap.tanzu.vmware.com -v $TAP_VERSION --values-file tap-values-full-basic.yaml -n tap-install
+tanzu package install tap -p tap.tanzu.vmware.com -v $TAP_VERSION --values-file tap-values-full-ootb-basic.yaml -n tap-install
 #tanzu package installed get tap -n tap-install
 #tanzu package installed list -A
 
 
 # 9. DEVELOPER NAMESPACE
+#https://docs.vmware.com/en/VMware-Tanzu-Application-Platform/1.4/tap/scc-ootb-supply-chain-basic.html
 echo "CREATING DEVELOPER NAMESPACE"
 
 tanzu secret registry add registry-credentials \
@@ -521,12 +522,12 @@ cat <<EOF | tee change-batch.json
         {
             "Action": "UPSERT",
             "ResourceRecordSet": {
-                "Name": "*.${full_domain}",
+                "Name": "*.$full_domain",
                 "Type": "A",
                 "TTL": 60,
                 "ResourceRecords": [
                     {
-                        "Value": "${ip_address}"
+                        "Value": "$ip_address"
                     }
                 ]
             }

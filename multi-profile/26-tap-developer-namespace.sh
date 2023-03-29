@@ -1,5 +1,6 @@
 #!/bin/bash
 #https://docs.vmware.com/en/VMware-Tanzu-Application-Platform/1.3/tap/GUID-set-up-namespaces-aws.html
+#https://docs.vmware.com/en/VMware-Tanzu-Application-Platform/1.4/tap/scc-ootb-supply-chain-basic.html
 
 subscription=nycpivot
 target_registry=tanzuapplicationplatform

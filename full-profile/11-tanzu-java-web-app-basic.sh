@@ -38,6 +38,9 @@ git_app_url=https://github.com/nycpivot/${app_name}
 kubectl config use-context $kube_context
 echo
 
+pe "tanzu apps cluster-supply-chain list"
+echo
+
 pe "tanzu apps workload list"
 echo
 
@@ -50,7 +53,7 @@ echo
 
 pe "clear"
 
-pe "tanzu apps workload create $app_name --git-repo ${git_app_url} --git-branch main --type web --annotation autoscaling.knative.dev/min-scale=2 --label app.kubernetes.io/part-of=$app_name --yes"
+pe "tanzu apps workload create $app_name --git-repo $git_app_url --git-branch main --type web --annotation autoscaling.knative.dev/min-scale=2 --label app.kubernetes.io/part-of=$app_name --yes"
 echo
 
 pe "clear"
@@ -65,3 +68,4 @@ pe "tanzu apps workload get $app_name"
 echo
 
 echo http://${app_name}.default.full.tap.nycpivot.com
+echo

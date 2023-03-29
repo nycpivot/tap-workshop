@@ -49,7 +49,7 @@ echo
 
 pe "clear"
 
-pe "tanzu apps workload create $app_name --git-repo ${git_app_url} --git-branch main --type web --annotation autoscaling.knative.dev/min-scale=2 --label apps.tanzu.vmware.com/has-tests=true --label app.kubernetes.io/part-of=$app_name --yes"
+pe "tanzu apps workload create $app_name --git-repo $git_app_url --git-branch main --type web --app $app_name --label apps.tanzu.vmware.com/has-tests=true --param-yaml testing_pipeline_matching_labels='{\"apps.tanzu.vmware.com/pipeline\": \"test\"}' --tail --yes"
 echo
 
 pe "clear"

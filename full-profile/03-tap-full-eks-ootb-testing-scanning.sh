@@ -8,7 +8,7 @@ target_tbs_repo=tap-build-service
 git_catalog_repository=tanzu-application-platform
 
 
-#INSTALL TAP WITH SCST
+#INSTALL TAP WITH OOTB TESTING
 echo
 echo "<<< INSTALLING FULL TAP PROFILE >>>"
 echo

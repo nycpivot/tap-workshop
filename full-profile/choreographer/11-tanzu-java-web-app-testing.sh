@@ -49,7 +49,7 @@ echo
 
 pe "clear"
 
-pe "tanzu apps workload create $app_name --git-repo $git_app_url --git-branch main --type web --app $app_name --label apps.tanzu.vmware.com/has-tests=true --param-yaml testing_pipeline_matching_labels='{\"apps.tanzu.vmware.com/pipeline\": \"test\"}' --tail --yes"
+pe "tanzu apps workload create $app_name --git-repo $git_app_url --git-branch main --type web --app $app_name --label apps.tanzu.vmware.com/has-tests=true --param-yaml testing_pipeline_matching_labels='{\"apps.tanzu.vmware.com/pipeline\": \"test\"}' --yes"
 echo
 
 pe "clear"
@@ -64,10 +64,4 @@ pe "tanzu apps workload get $app_name"
 echo
 
 echo http://${app_name}.default.full.tap.nycpivot.com
-echo
-
-pe "tanzu insight image get --digest DIGEST"
-echo
-
-pe "tanzu insight image vulnerabilities --digest DIGEST"
 echo

@@ -97,6 +97,8 @@ aws route53 change-resource-record-sets --hosted-zone-id $hosted_zone_id --chang
 
 
 #CREATE TEKTON PIPELINE
+kubectl delete -f pipeline-testing.yaml
+
 rm pipeline-testing.yaml
 cat <<'EOF' | tee pipeline-testing.yaml
 apiVersion: tekton.dev/v1beta1

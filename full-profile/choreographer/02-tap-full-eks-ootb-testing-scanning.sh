@@ -7,7 +7,9 @@ full_domain=full.tap.nycpivot.com
 target_tbs_repo=tap-build-service
 git_catalog_repository=tanzu-application-platform
 scan_policy=scan-policy
-scan_template=private-image-scan-template 
+scan_template_source=blob-source-scan-template
+scan_template_image=private-image-scan-template
+
 
 #CREATE SCAN POLICY
 rm scan-policy.yaml
@@ -63,8 +65,8 @@ echo
 echo "<<< INSTALLING FULL TAP PROFILE >>>"
 echo
 
-rm tap-values-full-testing-scanning.yaml
-cat <<EOF | tee tap-values-full-testing-scanning.yaml
+rm tap-values-full-ootb-testing-scanning.yaml
+cat <<EOF | tee tap-values-full-ootb-testing-scanning.yaml
 profile: full
 ceip_policy_disclosed: true
 shared:
@@ -77,10 +79,10 @@ ootb_supply_chain_testing_scanning:
   scanning:
     source:
       policy: $scan_policy
-      template: $scan_template
+      template: $scan_template_source
     image:
       policy: $scan_policy
-      template: $scan_template
+      template: $scan_template_image
 buildservice:
   kp_default_repository: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${target_tbs_repo}
   kp_default_repository_aws_iam_role_arn: "arn:aws:iam::${AWS_ACCOUNT_ID}:role/${target_tbs_repo}"
@@ -114,7 +116,7 @@ excluded_packages:
   - policy.apps.tanzu.vmware.com
 EOF
 
-tanzu package installed update tap -v $TAP_VERSION --values-file tap-values-full-testing-scanning.yaml -n tap-install
+tanzu package installed update tap -v $TAP_VERSION --values-file tap-values-full-ootb-testing-scanning.yaml -n tap-install
 #tanzu package installed get tap -n tap-install
 #tanzu package installed list -A
 
@@ -151,6 +153,8 @@ EOF
 hosted_zone_id=$(aws route53 list-hosted-zones --query HostedZones[0].Id --output text | awk -F '/' '{print $3}')
 aws route53 change-resource-record-sets --hosted-zone-id $hosted_zone_id --change-batch file:///$HOME/change-batch.json
 
+#CREATE TEKTON PIPELINE
+kubectl delete -f pipeline-testing.yaml
 
 rm pipeline-testing.yaml
 cat <<'EOF' | tee pipeline-testing.yaml

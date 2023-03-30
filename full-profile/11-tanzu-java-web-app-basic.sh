@@ -27,16 +27,19 @@ clear
 DEMO_PROMPT="${GREEN}➜ TAP ${CYAN}\W "
 
 app_name=tanzu-java-web-app
+git_app_url=https://github.com/nycpivot/${app_name}
 
 kubectl config get-contexts
 echo
 
 read -p "Select build context: " kube_context
 
-git_app_url=https://github.com/nycpivot/${app_name}
-
 kubectl config use-context $kube_context
 echo
+
+aws ecr delete-repository --repository-name tanzu-application-platform/$app_name-default --region $AWS_REGION --force
+aws ecr delete-repository --repository-name tanzu-application-platform/$app_name-default-bundle --region $AWS_REGION --force
+clear
 
 pe "tanzu apps cluster-supply-chain list"
 echo

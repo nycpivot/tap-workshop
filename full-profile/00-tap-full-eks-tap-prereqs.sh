@@ -401,7 +401,7 @@ fi
 kubectl create ns tap-install
 
 tanzu package repository add tanzu-tap-repository \
-  --url $INSTALL_REGISTRY_HOSTNAME/$INSTALL_REPO:$TANZU_VERSION \
+  --url $INSTALL_REGISTRY_HOSTNAME/$INSTALL_REPO:$TAP_VERSION \
   --namespace tap-install
 
 #tanzu package repository get tanzu-tap-repository --namespace tap-install
@@ -409,4 +409,4 @@ tanzu package repository add tanzu-tap-repository \
 #tanzu package available list tap.tanzu.vmware.com --namespace tap-install
 
 #INSTALL OOTB SUPPLY CHAIN - BASIC
-bash $HOME/tap-workshop/full-profile/01-tap-full-eks-ootb-basic.sh
+bash $HOME/tap-workshop/full-profile/01-tap-full-eks-ootb-basic.sh $full_domain

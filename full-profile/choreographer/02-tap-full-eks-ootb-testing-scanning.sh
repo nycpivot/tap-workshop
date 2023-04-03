@@ -67,57 +67,23 @@ echo
 
 rm tap-values-full-ootb-testing-scanning.yaml
 cat <<EOF | tee tap-values-full-ootb-testing-scanning.yaml
-profile: full
-ceip_policy_disclosed: true
-shared:
-  ingress_domain: "${full_domain}"
-supply_chain: testing_scanning
-ootb_supply_chain_testing_scanning:
-  registry:
-    server: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
-    repository: "tanzu-application-platform"
-  scanning:
-    source:
-      policy: $scan_policy
-      template: $scan_template_source
-    image:
-      policy: $scan_policy
-      template: $scan_template_image
-buildservice:
-  kp_default_repository: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${target_tbs_repo}
-  kp_default_repository_aws_iam_role_arn: "arn:aws:iam::${AWS_ACCOUNT_ID}:role/${target_tbs_repo}"
-contour:
-  infrastructure_provider: aws
-  envoy:
-    service:
-      aws:
-        LBType: nlb
-ootb_templates:
-  iaas_auth: true
-tap_gui:
-  service_type: LoadBalancer
-  app_config:
-    catalog:
-      locations:
-        - type: url
-          target: https://github.com/nycpivot/${git_catalog_repository}/catalog-info.yaml
-metadata_store:
-  ns_for_export_app_cert: "default"
-  app_service_type: LoadBalancer
+registry:
+  server: "964978768106.dkr.ecr.us-east-1.amazonaws.com"
+  repository: "tanzu-application-platform"
 scanning:
-  metadataStore:
-    url: ""
+  source:
+    policy: scan-policy
+    template: blob-source-scan-template
+  image:
+    policy: scan-policy
+    template: private-image-scan-template
 grype:
   namespace: "default"
   targetImagePullSecret: "registry-credentials"
   scanner:
     serviceAccount: grype-scanner
     serviceAccountAnnotations:
-      eks.amazonaws.com/role-arn: "arn:aws:iam::${AWS_ACCOUNT_ID}:role/tap-workload"
-cnrs:
-  domain_name: $full_domain
-excluded_packages:
-  - policy.apps.tanzu.vmware.com
+      eks.amazonaws.com/role-arn: "arn:aws:iam::964978768106:role/tap-workload"
 EOF
 
 tanzu package installed update tap -v $TAP_VERSION --values-file tap-values-full-ootb-testing-scanning.yaml -n tap-install

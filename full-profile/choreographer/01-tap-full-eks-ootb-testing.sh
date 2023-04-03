@@ -1,11 +1,13 @@
 #!/bin/bash
 
+export FULL_DOMAIN=full.tap.nycpivot.com
+export TARGET_TBS_REPO=tap-build-service
 export EKS_CLUSTER_NAME=tap-full
 export TAP_VERSION=1.4.2
 export OOTB_SUPPLY_CHAIN_VERSION=0.11.2
 
-full_domain=full.tap.nycpivot.com
-target_tbs_repo=tap-build-service
+
+
 git_catalog_repository=tanzu-application-platform
 
 
@@ -16,25 +18,49 @@ echo
 
 rm tap-values-full-ootb-testing.yaml
 cat <<EOF | tee tap-values-full-ootb-testing.yaml
-registry:
-  server: "964978768106.dkr.ecr.us-east-1.amazonaws.com"
-  repository: "tanzu-application-platform"
+profile: full
+ceip_policy_disclosed: true
+shared:
+  ingress_domain: "$FULL_DOMAIN"
+supply_chain: testing
+ootb_supply_chain_testing:
+  registry:
+    server: $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+    repository: "tanzu-application-platform"
+buildservice:
+  kp_default_repository: $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$TARGET_TBS_REPO
+  kp_default_repository_aws_iam_role_arn: "arn:aws:iam::$AWS_ACCOUNT_ID:role/$TARGET_TBS_REPO"
+contour:
+  infrastructure_provider: aws
+  envoy:
+    service:
+      aws:
+        LBType: nlb
+ootb_templates:
+  iaas_auth: true
+tap_gui:
+  service_type: LoadBalancer
+  app_config:
+    catalog:
+      locations:
+        - type: url
+          target: https://github.com/nycpivot/$TARGET_TBS_REPO/catalog-info.yaml
+metadata_store:
+  ns_for_export_app_cert: "default"
+  app_service_type: LoadBalancer
+scanning:
+  metadataStore:
+    url: ""
 grype:
   namespace: "default"
   targetImagePullSecret: "registry-credentials"
+cnrs:
+  domain_name: $FULL_DOMAIN
+excluded_packages:
+  - policy.apps.tanzu.vmware.com
 EOF
 
-tanzu package installed update tap -v $OOTB_SUPPLY_CHAIN_VERSION --values-file tap-values-full-ootb-testing.yaml -n tap-install
-#tanzu package installed get tap -n tap-install
-#tanzu package installed list -A
-
-#tanzu apps cluster-supply-chain list
-
-tanzu package install ootb-supply-chain-testing \
-  --package-name ootb-supply-chain-testing.tanzu.vmware.com \
-  --version $OOTB_SUPPLY_CHAIN_VERSION \
-  --namespace tap-install \
-  --values-file tap-values-full-ootb-testing.yaml
+tanzu package installed update tap -v $TAP_VERSION --values-file tap-values-full-ootb-testing.yaml -n tap-install
 
 
 #CONFIGURE DNS NAME WITH ELB IP
@@ -51,7 +77,7 @@ cat <<EOF | tee change-batch.json
         {
             "Action": "UPSERT",
             "ResourceRecordSet": {
-                "Name": "*.$full_domain",
+                "Name": "*.$FULL_DOMAIN",
                 "Type": "A",
                 "TTL": 60,
                 "ResourceRecords": [
@@ -111,7 +137,7 @@ kubectl apply -f pipeline-testing.yaml
 
 
 echo
-echo http://tap-gui.${full_domain}
+echo http://tap-gui.$FULL_DOMAIN
 echo
 echo "HAPPY TAP'ING"
 echo

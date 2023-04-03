@@ -110,6 +110,10 @@ scanning:
 grype:
   namespace: "default"
   targetImagePullSecret: "registry-credentials"
+  scanner:
+    serviceAccount: grype-scanner
+    serviceAccountAnnotations:
+      eks.amazonaws.com/role-arn: "arn:aws:iam::${AWS_ACCOUNT_ID}:role/tap-workload"
 cnrs:
   domain_name: $full_domain
 excluded_packages:
@@ -152,6 +156,7 @@ EOF
 
 hosted_zone_id=$(aws route53 list-hosted-zones --query HostedZones[0].Id --output text | awk -F '/' '{print $3}')
 aws route53 change-resource-record-sets --hosted-zone-id $hosted_zone_id --change-batch file:///$HOME/change-batch.json
+
 
 #CREATE TEKTON PIPELINE
 kubectl delete -f pipeline-testing.yaml

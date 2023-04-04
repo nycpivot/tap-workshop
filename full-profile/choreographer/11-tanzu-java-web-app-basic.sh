@@ -50,8 +50,11 @@ echo
 
 workloads_msg=$(tanzu apps workload list)
 
-pe "tanzu apps workload delete $app_name --yes"
-echo
+if [[ $workloads_msg != "No workloads found." ]]
+then
+    pe "tanzu apps workload delete $app_name --yes"
+    echo
+fi
 
 pe "aws ecr create-repository --repository-name tanzu-application-platform/$app_name-default --region $AWS_REGION --no-cli-pager"
 pe "aws ecr create-repository --repository-name tanzu-application-platform/$app_name-default-bundle --region $AWS_REGION --no-cli-pager"
@@ -59,7 +62,7 @@ echo
 
 pe "clear"
 
-pe "tanzu apps workload create $app_name --git-repo $git_repo --sub-path $sub_path --git-branch main --type web --annotation autoscaling.knative.dev/min-scale=2 --label app.kubernetes.io/part-of=$app_name --yes"
+pe "tanzu apps workload create $app_name-basic --git-repo $git_repo --sub-path $sub_path --git-branch main --type web --annotation autoscaling.knative.dev/min-scale=2 --label app.kubernetes.io/part-of=$app_name --yes"
 echo
 
 pe "clear"

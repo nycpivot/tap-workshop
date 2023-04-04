@@ -48,8 +48,13 @@ echo
 pe "tanzu apps workload list"
 echo
 
-pe "tanzu apps workload delete $app_name --yes"
-echo
+workloads_msg=$(tanzu apps workload list)
+
+if [[ $workloads_msg != "No workloads found." ]]
+then
+    pe "tanzu apps workload delete $app_name --yes"
+    echo
+fi
 
 pe "aws ecr create-repository --repository-name tanzu-application-platform/$app_name-default --region $AWS_REGION --no-cli-pager"
 pe "aws ecr create-repository --repository-name tanzu-application-platform/$app_name-default-bundle --region $AWS_REGION --no-cli-pager"
@@ -57,7 +62,7 @@ echo
 
 pe "clear"
 
-pe "tanzu apps workload create $app_name --git-repo $git_repo --sub-path $sub_path --git-branch main --type web --app $app_name --label apps.tanzu.vmware.com/has-tests=true --param-yaml testing_pipeline_matching_labels='{\"apps.tanzu.vmware.com/pipeline\": \"test\"}' --yes"
+pe "tanzu apps workload create $app_name-testing-scanning --git-repo $git_repo --sub-path $sub_path --git-branch main --type web --app $app_name --label apps.tanzu.vmware.com/has-tests=true --param-yaml testing_pipeline_matching_labels='{\"apps.tanzu.vmware.com/pipeline\": \"test\"}' --yes"
 echo
 
 pe "clear"

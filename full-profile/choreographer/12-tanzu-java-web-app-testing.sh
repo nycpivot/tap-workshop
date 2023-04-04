@@ -26,8 +26,8 @@ clear
 
 DEMO_PROMPT="${GREEN}➜ TAP ${CYAN}\W "
 
-app_name=tanzu-java-web-app
-git_repo=https://github.com/nycpivot/$app_name
+app_name=tanzu-java-web-app-testing
+git_repo=https://github.com/nycpivot/tanzu-java-web-app
 sub_path=ootb-supply-chain-basic
 
 kubectl config get-contexts
@@ -62,7 +62,7 @@ echo
 
 pe "clear"
 
-pe "tanzu apps workload create $app_name-testing --git-repo $git_repo --sub-path $sub_path --git-branch main --type web --app $app_name --label apps.tanzu.vmware.com/has-tests=true --param-yaml testing_pipeline_matching_labels='{\"apps.tanzu.vmware.com/pipeline\": \"test\"}' --yes"
+pe "tanzu apps workload create $app_name --git-repo $git_repo --sub-path $sub_path --git-branch main --type web --app $app_name --label apps.tanzu.vmware.com/has-tests=true --param-yaml testing_pipeline_matching_labels='{\"apps.tanzu.vmware.com/pipeline\": \"test\"}' --yes"
 echo
 
 pe "clear"

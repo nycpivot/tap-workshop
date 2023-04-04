@@ -26,8 +26,8 @@ clear
 
 DEMO_PROMPT="${GREEN}➜ TAP ${CYAN}\W "
 
-app_name=tanzu-java-web-app
-git_repo=https://github.com/nycpivot/$app_name
+app_name=tanzu-java-web-app-basic
+git_repo=https://github.com/nycpivot/tanzu-java-web-app
 sub_path=ootb-supply-chain-basic
 
 kubectl config get-contexts
@@ -62,7 +62,7 @@ echo
 
 pe "clear"
 
-pe "tanzu apps workload create $app_name-basic --git-repo $git_repo --sub-path $sub_path --git-branch main --type web --annotation autoscaling.knative.dev/min-scale=2 --label app.kubernetes.io/part-of=$app_name --yes"
+pe "tanzu apps workload create $app_name --git-repo $git_repo --sub-path $sub_path --git-branch main --type web --annotation autoscaling.knative.dev/min-scale=2 --label app.kubernetes.io/part-of=$app_name --yes"
 echo
 
 pe "clear"

@@ -3,8 +3,58 @@
 FULL_DOMAIN=$(cat /tmp/tap-full-domain)
 
 TAP_VERSION=1.4.2
+SCAN_POLICY=scan-policy
 TARGET_TBS_REPO=tap-build-service
 GIT_CATALOG_REPOSITORY=tanzu-application-platform
+
+#CREATE SCAN POLICY
+rm scan-policy.yaml
+cat <<EOF | tee scan-policy.yaml
+apiVersion: scanning.apps.tanzu.vmware.com/v1beta1
+kind: ScanPolicy
+metadata:
+  name: $SCAN_POLICY
+  labels:
+    'app.kubernetes.io/part-of': 'enable-in-gui'
+spec:
+  regoFile: |
+    package main
+
+    # Accepted Values: "Critical", "High", "Medium", "Low", "Negligible", "UnknownSeverity"
+    notAllowedSeverities := ["Critical", "High", "UnknownSeverity"]
+    ignoreCves := []
+
+    contains(array, elem) = true {
+      array[_] = elem
+    } else = false { true }
+
+    isSafe(match) {
+      severities := { e | e := match.ratings.rating.severity } | { e | e := match.ratings.rating[_].severity }
+      some i
+      fails := contains(notAllowedSeverities, severities[i])
+      not fails
+    }
+
+    isSafe(match) {
+      ignore := contains(ignoreCves, match.id)
+      ignore
+    }
+
+    deny[msg] {
+      comps := { e | e := input.bom.components.component } | { e | e := input.bom.components.component[_] }
+      some i
+      comp := comps[i]
+      vulns := { e | e := comp.vulnerabilities.vulnerability } | { e | e := comp.vulnerabilities.vulnerability[_] }
+      some j
+      vuln := vulns[j]
+      ratings := { e | e := vuln.ratings.rating.severity } | { e | e := vuln.ratings.rating[_].severity }
+      not isSafe(vuln)
+      msg = sprintf("CVE %s %s %s", [comp.name, vuln.id, ratings])
+    }
+EOF
+
+kubectl apply -f scan-policy.yaml
+
 
 #INSTALL TAP WITH OOTB TESTING
 echo
@@ -90,48 +140,6 @@ EOF
 
 hosted_zone_id=$(aws route53 list-hosted-zones --query HostedZones[0].Id --output text | awk -F '/' '{print $3}')
 aws route53 change-resource-record-sets --hosted-zone-id $hosted_zone_id --change-batch file:///$HOME/change-batch.json
-
-
-#CREATE TEKTON PIPELINE
-kubectl delete -f pipeline-testing.yaml
-
-rm pipeline-testing.yaml
-cat <<'EOF' | tee pipeline-testing.yaml
-apiVersion: tekton.dev/v1beta1
-kind: Pipeline
-metadata:
-  name: tanzu-java-web-app-pipeline
-  labels:
-    apps.tanzu.vmware.com/pipeline: test      # (!) required
-spec:
-  params:
-    - name: source-url                        # (!) required
-    - name: source-revision                   # (!) required
-  tasks:
-    - name: test
-      params:
-        - name: source-url
-          value: $(params.source-url)
-        - name: source-revision
-          value: $(params.source-revision)
-      taskSpec:
-        params:
-          - name: source-url
-          - name: source-revision
-        steps:
-          - name: test
-            image: gradle
-            securityContext:
-              runAsUser: 0
-            script: |-
-              cd `mktemp -d`
-              wget -qO- \$(params.source-url) | tar xvz -m
-              chmod +x ./mvnw
-              ./mvnw test
-EOF
-
-kubectl apply -f pipeline-testing.yaml
-
 
 echo
 echo http://tap-gui.$FULL_DOMAIN

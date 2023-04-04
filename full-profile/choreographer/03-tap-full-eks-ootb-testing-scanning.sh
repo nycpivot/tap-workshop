@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export TAP_VERSION=1.4.2
+TAP_VERSION=1.4.2
 
 SCAN_POLICY=scan-policy
 SCAN_TEMPLATE_SOURCE=blob-source-scan-template

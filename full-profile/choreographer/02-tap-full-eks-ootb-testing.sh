@@ -1,11 +1,10 @@
 #!/bin/bash
 
-export TARGET_TBS_REPO=tap-build-service
-export EKS_CLUSTER_NAME=tap-full
-export TAP_VERSION=1.4.2
-export OOTB_SUPPLY_CHAIN_VERSION=0.11.2
-
 FULL_DOMAIN=$(cat /tmp/tap-full-domain)
+
+TAP_VERSION=1.4.2
+TARGET_TBS_REPO=tap-build-service
+GIT_CATALOG_REPOSITORY=tanzu-application-platform
 
 #INSTALL TAP WITH OOTB TESTING
 echo

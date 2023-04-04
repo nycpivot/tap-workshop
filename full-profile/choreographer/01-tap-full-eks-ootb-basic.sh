@@ -1,10 +1,10 @@
 #!/bin/bash
 
-export TAP_VERSION=1.4.2
-export TARGET_TBS_REPO=tap-build-service
-export GIT_CATALOG_REPOSITORY=tanzu-application-platform
-
 FULL_DOMAIN=$(cat /tmp/tap-full-domain)
+
+TAP_VERSION=1.4.2
+GIT_CATALOG_REPOSITORY=tanzu-application-platform
+INSTALL_REGISTRY_HOSTNAME=registry.tanzu.vmware.com
 
 # 1. CAPTURE PIVNET SECRETS
 pivnet_password=$(aws secretsmanager get-secret-value --secret-id $PIVNET_USERNAME | jq -r .SecretString | jq -r .\"pivnet_password\")
@@ -49,7 +49,7 @@ tap_gui:
     catalog:
       locations:
         - type: url
-          target: https://github.com/nycpivot/$TARGET_TBS_REPO/catalog-info.yaml
+          target: https://github.com/nycpivot/$GIT_CATALOG_REPOSITORY/catalog-info.yaml
 metadata_store:
   ns_for_export_app_cert: "default"
   app_service_type: LoadBalancer

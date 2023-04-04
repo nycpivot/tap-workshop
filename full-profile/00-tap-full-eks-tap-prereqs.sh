@@ -14,7 +14,10 @@ export ESSENTIALS_FILENAME=tanzu-cluster-essentials-linux-amd64-1.4.1.tgz
 echo export FULL_DOMAIN=$full_domain >> $HOME/.bashrc
 echo
 
-source $HOME/.bashrc #reload environment variables
+source $HOME/.bashrc #reload environment variables (still doesn't work in other scripts)
+
+#create a tmp file for now
+echo $full_domain > /tmp/tap-full-domain
 
 
 # 1. CAPTURE PIVNET SECRETS

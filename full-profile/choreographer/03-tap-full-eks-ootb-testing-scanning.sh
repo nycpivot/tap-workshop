@@ -1,15 +1,12 @@
 #!/bin/bash
 
-export EKS_CLUSTER_NAME=tap-full
 export TAP_VERSION=1.4.2
 
-full_domain=full.tap.nycpivot.com
-target_tbs_repo=tap-build-service
-git_catalog_repository=tanzu-application-platform
-scan_policy=scan-policy
-scan_template_source=blob-source-scan-template
-scan_template_image=private-image-scan-template
+SCAN_POLICY=scan-policy
+SCAN_TEMPLATE_SOURCE=blob-source-scan-template
+SCAN_TEMPLATE_IMAGE=private-image-scan-template
 
+FULL_DOMAIN=$(cat /tmp/tap-full-domain)
 
 #CREATE SCAN POLICY
 rm scan-policy.yaml
@@ -17,7 +14,7 @@ cat <<EOF | tee scan-policy.yaml
 apiVersion: scanning.apps.tanzu.vmware.com/v1beta1
 kind: ScanPolicy
 metadata:
-  name: $scan_policy
+  name: $SCAN_POLICY
   labels:
     'app.kubernetes.io/part-of': 'enable-in-gui'
 spec:
@@ -62,7 +59,7 @@ kubectl apply -f scan-policy.yaml
 
 #UPDATE TAP WITH OOTB TESTING & SCANNING
 echo
-echo "<<< INSTALLING FULL TAP PROFILE >>>"
+echo "<<< UPDATE SUPPLY CHAIN TO OOTB TESTING & SCANNING >>>"
 echo
 
 rm tap-values-full-ootb-testing-scanning.yaml
@@ -72,11 +69,11 @@ registry:
   repository: "tanzu-application-platform"
 scanning:
   source:
-    policy: scan-policy
-    template: blob-source-scan-template
+    policy: $SCAN_POLICY
+    template: $SCAN_TEMPLATE_SOURCE
   image:
-    policy: scan-policy
-    template: private-image-scan-template
+    policy: $SCAN_POLICY
+    template: $SCAN_TEMPLATE_IMAGE
 grype:
   namespace: "default"
   targetImagePullSecret: "registry-credentials"
@@ -87,13 +84,11 @@ grype:
 EOF
 
 tanzu package installed update tap -v $TAP_VERSION --values-file tap-values-full-ootb-testing-scanning.yaml -n tap-install
-#tanzu package installed get tap -n tap-install
-#tanzu package installed list -A
-
-#tanzu apps cluster-supply-chain list
 
 #CONFIGURE DNS NAME WITH ELB IP
-echo "CONFIGURING DNS"
+echo
+echo "<<< CONFIGURING DNS >>>"
+echo
 
 ingress=$(kubectl get svc envoy -n tanzu-system-ingress -o json | jq -r .status.loadBalancer.ingress[].hostname)
 ip_address=$(nslookup $ingress | awk '/^Address:/ {A=$2}; END {print A}')
@@ -106,12 +101,12 @@ cat <<EOF | tee change-batch.json
         {
             "Action": "UPSERT",
             "ResourceRecordSet": {
-                "Name": "*.${full_domain}",
+                "Name": "*.$FULL_DOMAIN",
                 "Type": "A",
                 "TTL": 60,
                 "ResourceRecords": [
                     {
-                        "Value": "${ip_address}"
+                        "Value": "$ip_address"
                     }
                 ]
             }
@@ -166,7 +161,7 @@ kubectl apply -f pipeline-testing.yaml
 
 
 echo
-echo http://tap-gui.${full_domain}
+echo http://tap-gui.$FULL_DOMAIN
 echo
 echo "HAPPY TAP'ING"
 echo

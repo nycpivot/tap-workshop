@@ -4,6 +4,7 @@ export TAP_VERSION=1.4.2
 export TARGET_TBS_REPO=tap-build-service
 export GIT_CATALOG_REPOSITORY=tanzu-application-platform
 
+FULL_DOMAIN=$(cat /tmp/tap-full-domain)
 
 # 1. CAPTURE PIVNET SECRETS
 pivnet_password=$(aws secretsmanager get-secret-value --secret-id $PIVNET_USERNAME | jq -r .SecretString | jq -r .\"pivnet_password\")

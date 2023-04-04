@@ -5,6 +5,7 @@ export EKS_CLUSTER_NAME=tap-full
 export TAP_VERSION=1.4.2
 export OOTB_SUPPLY_CHAIN_VERSION=0.11.2
 
+FULL_DOMAIN=$(cat /tmp/tap-full-domain)
 
 #INSTALL TAP WITH OOTB TESTING
 echo
@@ -59,7 +60,9 @@ tanzu package installed update tap -v $TAP_VERSION --values-file tap-values-full
 
 
 #CONFIGURE DNS NAME WITH ELB IP
-echo "CONFIGURING DNS"
+echo
+echo "<<< CONFIGURING DNS >>>"
+echo
 
 ingress=$(kubectl get svc envoy -n tanzu-system-ingress -o json | jq -r .status.loadBalancer.ingress[].hostname)
 ip_address=$(nslookup $ingress | awk '/^Address:/ {A=$2}; END {print A}')

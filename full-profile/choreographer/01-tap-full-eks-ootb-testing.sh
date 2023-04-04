@@ -1,14 +1,9 @@
 #!/bin/bash
 
-export FULL_DOMAIN=full.tap.nycpivot.com
 export TARGET_TBS_REPO=tap-build-service
 export EKS_CLUSTER_NAME=tap-full
 export TAP_VERSION=1.4.2
 export OOTB_SUPPLY_CHAIN_VERSION=0.11.2
-
-
-
-git_catalog_repository=tanzu-application-platform
 
 
 #INSTALL TAP WITH OOTB TESTING

@@ -1,7 +1,5 @@
 #!/bin/bash
 
-full_domain=$1
-
 export TAP_VERSION=1.4.2
 export TARGET_TBS_REPO=tap-build-service
 export GIT_CATALOG_REPOSITORY=tanzu-application-platform
@@ -27,7 +25,7 @@ cat <<EOF | tee tap-values-full-ootb-basic.yaml
 profile: full
 ceip_policy_disclosed: true
 shared:
-  ingress_domain: "$full_domain"
+  ingress_domain: "$FULL_DOMAIN"
 supply_chain: basic
 ootb_supply_chain_basic:
   registry:
@@ -61,7 +59,7 @@ grype:
   namespace: "default"
   targetImagePullSecret: "registry-credentials"
 cnrs:
-  domain_name: $full_domain
+  domain_name: $FULL_DOMAIN
 excluded_packages:
   - policy.apps.tanzu.vmware.com
 EOF
@@ -131,7 +129,7 @@ cat <<EOF | tee change-batch.json
         {
             "Action": "UPSERT",
             "ResourceRecordSet": {
-                "Name": "*.$full_domain",
+                "Name": "*.$FULL_DOMAIN",
                 "Type": "A",
                 "TTL": 60,
                 "ResourceRecords": [
@@ -149,7 +147,7 @@ hosted_zone_id=$(aws route53 list-hosted-zones --query HostedZones[0].Id --outpu
 aws route53 change-resource-record-sets --hosted-zone-id $hosted_zone_id --change-batch file:///$HOME/change-batch.json
 
 echo
-echo http://tap-gui.$full_domain
+echo http://tap-gui.$FULL_DOMAIN
 echo
 echo "HAPPY TAP'ING"
 echo

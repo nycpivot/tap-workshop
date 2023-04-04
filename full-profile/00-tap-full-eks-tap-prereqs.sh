@@ -11,6 +11,9 @@ export TARGET_TBS_REPO=tap-build-service
 export CLI_FILENAME=tanzu-framework-linux-amd64-v0.25.4.5.tar
 export ESSENTIALS_FILENAME=tanzu-cluster-essentials-linux-amd64-1.4.1.tgz
 
+echo export FULL_DOMAIN=$full_domain >> .bashrc
+echo
+
 
 # 1. CAPTURE PIVNET SECRETS
 echo
@@ -409,4 +412,4 @@ tanzu package repository add tanzu-tap-repository \
 #tanzu package available list tap.tanzu.vmware.com --namespace tap-install
 
 #INSTALL OOTB SUPPLY CHAIN - BASIC
-bash $HOME/tap-workshop/full-profile/01-tap-full-eks-ootb-basic.sh $full_domain
+bash $HOME/tap-workshop/full-profile/01-tap-full-eks-ootb-basic.sh

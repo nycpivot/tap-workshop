@@ -3,58 +3,8 @@
 FULL_DOMAIN=$(cat /tmp/tap-full-domain)
 
 TAP_VERSION=1.4.2
-SCAN_POLICY=scan-policy
 TARGET_TBS_REPO=tap-build-service
 GIT_CATALOG_REPOSITORY=tanzu-application-platform
-
-#CREATE SCAN POLICY
-rm scan-policy.yaml
-cat <<EOF | tee scan-policy.yaml
-apiVersion: scanning.apps.tanzu.vmware.com/v1beta1
-kind: ScanPolicy
-metadata:
-  name: $SCAN_POLICY
-  labels:
-    'app.kubernetes.io/part-of': 'enable-in-gui'
-spec:
-  regoFile: |
-    package main
-
-    # Accepted Values: "Critical", "High", "Medium", "Low", "Negligible", "UnknownSeverity"
-    notAllowedSeverities := ["Critical", "High", "UnknownSeverity"]
-    ignoreCves := []
-
-    contains(array, elem) = true {
-      array[_] = elem
-    } else = false { true }
-
-    isSafe(match) {
-      severities := { e | e := match.ratings.rating.severity } | { e | e := match.ratings.rating[_].severity }
-      some i
-      fails := contains(notAllowedSeverities, severities[i])
-      not fails
-    }
-
-    isSafe(match) {
-      ignore := contains(ignoreCves, match.id)
-      ignore
-    }
-
-    deny[msg] {
-      comps := { e | e := input.bom.components.component } | { e | e := input.bom.components.component[_] }
-      some i
-      comp := comps[i]
-      vulns := { e | e := comp.vulnerabilities.vulnerability } | { e | e := comp.vulnerabilities.vulnerability[_] }
-      some j
-      vuln := vulns[j]
-      ratings := { e | e := vuln.ratings.rating.severity } | { e | e := vuln.ratings.rating[_].severity }
-      not isSafe(vuln)
-      msg = sprintf("CVE %s %s %s", [comp.name, vuln.id, ratings])
-    }
-EOF
-
-kubectl apply -f scan-policy.yaml
-
 
 #INSTALL TAP WITH OOTB TESTING
 echo
@@ -104,6 +54,7 @@ cnrs:
 excluded_packages:
   - policy.apps.tanzu.vmware.com
 EOF
+echo
 
 tanzu package installed update tap -v $TAP_VERSION --values-file tap-values-full-ootb-testing.yaml -n tap-install
 
@@ -137,6 +88,7 @@ cat <<EOF | tee change-batch.json
     ]
 }
 EOF
+echo
 
 hosted_zone_id=$(aws route53 list-hosted-zones --query HostedZones[0].Id --output text | awk -F '/' '{print $3}')
 aws route53 change-resource-record-sets --hosted-zone-id $hosted_zone_id --change-batch file:///$HOME/change-batch.json
@@ -179,6 +131,7 @@ spec:
               chmod +x ./mvnw
               ./mvnw test
 EOF
+echo
 
 kubectl apply -f pipeline-testing.yaml
 

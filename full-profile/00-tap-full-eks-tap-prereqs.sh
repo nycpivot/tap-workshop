@@ -417,6 +417,7 @@ tanzu package repository add tanzu-tap-repository \
 #tanzu package available list tap.tanzu.vmware.com --namespace tap-install
 
 #download sample app code
+rm -rf tanzu-java-web-app
 git clone https://github.com/nycpivot/tanzu-java-web-app
 
 #INSTALL OOTB SUPPLY CHAIN - BASIC

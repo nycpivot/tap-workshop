@@ -59,12 +59,13 @@ then
 fi
 
 pe "aws ecr create-repository --repository-name tanzu-application-platform/$app_name-default --region $AWS_REGION --no-cli-pager"
+echo
 pe "aws ecr create-repository --repository-name tanzu-application-platform/$app_name-default-bundle --region $AWS_REGION --no-cli-pager"
 echo
 
 pe "clear"
 
-pe "vim $HOME/tanzu-java-web-app/ootb-supply-chain-testing/src/main/java/com/example/springboot/HelloController.java"
+pe "vim $HOME/tanzu-java-web-app/src/main/java/com/example/springboot/HelloController.java"
 echo
 
 pe "git add ."

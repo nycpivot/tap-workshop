@@ -53,6 +53,7 @@ spec:
       msg = sprintf("CVE %s %s %s", [comp.name, vuln.id, ratings])
     }
 EOF
+echo
 
 kubectl apply -f scan-policy.yaml
 
@@ -82,6 +83,7 @@ grype:
     serviceAccountAnnotations:
       eks.amazonaws.com/role-arn: "arn:aws:iam::964978768106:role/tap-workload"
 EOF
+echo
 
 tanzu package installed update tap -v $TAP_VERSION --values-file tap-values-full-ootb-testing-scanning.yaml -n tap-install
 
@@ -114,6 +116,7 @@ cat <<EOF | tee change-batch.json
     ]
 }
 EOF
+echo
 
 hosted_zone_id=$(aws route53 list-hosted-zones --query HostedZones[0].Id --output text | awk -F '/' '{print $3}')
 aws route53 change-resource-record-sets --hosted-zone-id $hosted_zone_id --change-batch file:///$HOME/change-batch.json
@@ -156,6 +159,7 @@ spec:
               chmod +x ./mvnw
               ./mvnw test
 EOF
+echo
 
 kubectl apply -f pipeline-testing.yaml
 

@@ -416,5 +416,8 @@ tanzu package repository add tanzu-tap-repository \
 #tanzu package available list --namespace tap-install
 #tanzu package available list tap.tanzu.vmware.com --namespace tap-install
 
+#download sample app code
+git clone https://github.com/nycpivot/tanzu-java-web-app
+
 #INSTALL OOTB SUPPLY CHAIN - BASIC
 bash $HOME/tap-workshop/full-profile/choreographer/01-tap-full-eks-ootb-basic.sh

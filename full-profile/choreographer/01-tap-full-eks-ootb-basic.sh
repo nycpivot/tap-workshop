@@ -68,6 +68,7 @@ EOF
 tanzu package installed delete tap -n tap-install --yes
 tanzu package install tap -p tap.tanzu.vmware.com -v $TAP_VERSION --values-file tap-values-full-ootb-basic.yaml -n tap-install
 
+sleep 300
 
 # 9. DEVELOPER NAMESPACE
 #https://docs.vmware.com/en/VMware-Tanzu-Application-Platform/1.4/tap/scc-ootb-supply-chain-basic.html

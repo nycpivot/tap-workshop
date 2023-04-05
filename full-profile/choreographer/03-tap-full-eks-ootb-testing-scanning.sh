@@ -129,7 +129,7 @@ kind: Pipeline
 metadata:
   name: tanzu-java-web-app-pipeline
   labels:
-    apps.tanzu.vmware.com/pipeline: test      # (!) required
+    apps.tanzu.vmware.com/pipeline: ootb-supply-chain-testing-scanning      # (!) required
 spec:
   params:
     - name: source-url                        # (!) required
@@ -152,7 +152,7 @@ spec:
               runAsUser: 0
             script: |-
               cd `mktemp -d`
-              wget -qO- \$(params.source-url) | tar xvz -m
+              wget -qO- $(params.source-url) | tar xvz -m
               chmod +x ./mvnw
               ./mvnw test
 EOF

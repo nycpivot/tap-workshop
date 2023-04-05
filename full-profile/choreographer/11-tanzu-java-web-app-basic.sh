@@ -26,7 +26,7 @@ clear
 
 DEMO_PROMPT="${GREEN}➜ TAP ${CYAN}\W "
 
-app_name=tanzu-java-web-app-basic
+app_name=tanzu-java-web-app
 git_repo=https://github.com/nycpivot/tanzu-java-web-app
 sub_path=ootb-supply-chain-basic
 
@@ -38,8 +38,9 @@ read -p "Select build context: " kube_context
 kubectl config use-context $kube_context
 echo
 
-aws ecr delete-repository --repository-name tanzu-application-platform/$app_name-default --region $AWS_REGION --force
-aws ecr delete-repository --repository-name tanzu-application-platform/$app_name-default-bundle --region $AWS_REGION --force
+#executing these commands this way runs them in the background without showing command
+repo1=$(aws ecr delete-repository --repository-name tanzu-application-platform/$app_name-default --region $AWS_REGION --force)
+repo2=$(aws ecr delete-repository --repository-name tanzu-application-platform/$app_name-default-bundle --region $AWS_REGION --force)
 clear
 
 pe "tanzu apps cluster-supply-chain list"
@@ -53,6 +54,7 @@ workloads_msg=$(tanzu apps workload list)
 if [[ $workloads_msg != "No workloads found." ]]
 then
     pe "tanzu apps workload delete $app_name --yes"
+    pe "clear"
     echo
 fi
 
@@ -62,7 +64,7 @@ echo
 
 pe "clear"
 
-pe "tanzu apps workload create $app_name --git-repo $git_repo --sub-path $sub_path --git-branch main --type web --annotation autoscaling.knative.dev/min-scale=2 --label app.kubernetes.io/part-of=$app_name --yes"
+pe "tanzu apps workload create $app_name --git-repo $git_repo --sub-path $sub_path --git-branch main --type web --label app.kubernetes.io/part-of=$app_name --yes"
 echo
 
 pe "clear"

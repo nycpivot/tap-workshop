@@ -1,6 +1,7 @@
 #!/bin/bash
 
 TAP_VERSION=1.4.2
+OOTB_SUPPLY_CHAIN_TESTING_SCANNING_VERSION=0.11.2
 
 SCAN_POLICY=scan-policy
 SCAN_TEMPLATE_SOURCE=blob-source-scan-template
@@ -85,7 +86,10 @@ grype:
 EOF
 echo
 
-tanzu package installed update tap -v $TAP_VERSION --values-file tap-values-full-ootb-testing-scanning.yaml -n tap-install
+tanzu package install ootb-supply-chain-testing-scanning \
+  --package-name ootb-supply-chain-testing-scanning.tanzu.vmware.com \
+  --version $OOTB_SUPPLY_CHAIN_TESTING_SCANNING_VERSION \
+  --values-file tap-values-full-ootb-testing-scanning.yaml
 
 #CONFIGURE DNS NAME WITH ELB IP
 echo

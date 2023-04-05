@@ -68,9 +68,12 @@ pe "clear"
 pe "vim $HOME/tanzu-java-web-app/src/main/java/com/example/springboot/HelloController.java"
 echo
 
+cd $HOME/tanzu-java-web-app
+
 pe "git add ."
 pe "git commit -m 'Created failing test.'"
 pe "git push"
+cd $HOME
 echo
 
 pe "tanzu apps workload create $app_name --git-repo $git_repo --sub-path $sub_path --git-branch main --type web --app $app_name --label apps.tanzu.vmware.com/has-tests=true --param-yaml testing_pipeline_matching_labels='{\"apps.tanzu.vmware.com/pipeline\": \"ootb-supply-chain-testing\"}' --yes"

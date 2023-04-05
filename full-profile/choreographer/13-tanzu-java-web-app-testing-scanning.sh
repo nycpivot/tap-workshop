@@ -68,6 +68,8 @@ pe "clear"
 pe "vim $HOME/tanzu-java-web-app/src/main/java/com/example/springboot/HelloController.java"
 echo
 
+cd $HOME/tanzu-java-web-app
+
 pe "git add ."
 pe "git commit -m 'Fixed failing test.'"
 pe "git push"

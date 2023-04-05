@@ -7,6 +7,7 @@ read -p "AWS Default Region: " aws_region_code
 read -p "Pivnet Username: " pivnet_username
 read -p "Pivnet Password: " pivnet_password
 read -p "Pivnet API Token: " pivnet_token
+read -p "Github CLI Token: " github_token
 
 sudo apt update
 yes | sudo apt upgrade
@@ -86,8 +87,9 @@ echo
 rm secrets.json
 cat <<EOF | tee secrets.json
 {
-    "pivnet_password": "${pivnet_password}",
-    "pivnet_token": "${pivnet_token}"
+    "pivnet_password": "$pivnet_password",
+    "pivnet_token": "$pivnet_token",
+    "github_token": "$github_token
 }
 EOF
 

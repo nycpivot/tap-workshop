@@ -425,4 +425,4 @@ git config user.name nycpivot
 git config user.email mijames@vmware.com
 
 #INSTALL OOTB SUPPLY CHAIN - BASIC
-bash $HOME/tap-workshop/full-profile/choreographer/01-tap-full-eks-ootb-basic.sh
+bash $HOME/tap-workshop/full-profile/supply-chain/01-ootb-basic.sh

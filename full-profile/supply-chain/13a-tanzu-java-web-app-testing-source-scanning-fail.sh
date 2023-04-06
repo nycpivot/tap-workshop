@@ -38,7 +38,12 @@ read -p "Select build context: " kube_context
 kubectl config use-context $kube_context
 echo
 
-pe "kubectl edit scanpolicy source-scan-policy"
+#executing these commands this way runs them in the background without showing command
+repo1=$(aws ecr delete-repository --repository-name tanzu-application-platform/$app_name-default --region $AWS_REGION --force)
+repo2=$(aws ecr delete-repository --repository-name tanzu-application-platform/$app_name-default-bundle --region $AWS_REGION --force)
+clear
+
+pe "tanzu apps cluster-supply-chain list"
 echo
 
 pe "tanzu apps workload list"
@@ -50,10 +55,15 @@ if [[ $workloads_msg != "No workloads found." ]]
 then
     pe "tanzu apps workload delete $app_name --yes"
     echo
-
-    pe "clear"
-    echo
 fi
+    
+pe "clear"
+echo
+
+pe "aws ecr create-repository --repository-name tanzu-application-platform/$app_name-default --region $AWS_REGION --no-cli-pager"
+echo
+pe "aws ecr create-repository --repository-name tanzu-application-platform/$app_name-default-bundle --region $AWS_REGION --no-cli-pager"
+echo
 
 pe "clear"
 

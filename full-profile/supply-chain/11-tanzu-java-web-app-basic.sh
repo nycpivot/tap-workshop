@@ -28,7 +28,7 @@ DEMO_PROMPT="${GREEN}➜ TAP ${CYAN}\W "
 
 app_name=tanzu-java-web-app
 git_repo=https://github.com/nycpivot/tanzu-java-web-app
-sub_path=ootb-supply-chain-testing-scanning
+sub_path=ootb-supply-chain-basic
 
 kubectl config get-contexts
 echo
@@ -55,10 +55,10 @@ if [[ $workloads_msg != "No workloads found." ]]
 then
     pe "tanzu apps workload delete $app_name --yes"
     echo
-
-    pe "clear"
-    echo
 fi
+
+pe "clear"
+echo
 
 pe "aws ecr create-repository --repository-name tanzu-application-platform/$app_name-default --region $AWS_REGION --no-cli-pager"
 echo
@@ -67,18 +67,7 @@ echo
 
 pe "clear"
 
-pe "vim $HOME/tanzu-java-web-app/src/main/java/com/example/springboot/HelloController.java"
-echo
-
-cd $HOME/tanzu-java-web-app
-
-pe "git add ."
-pe "git commit -m 'Fixed failing test.'"
-pe "git push"
-cd $HOME
-echo
-
-pe "tanzu apps workload create $app_name --git-repo $git_repo --git-branch main --type web --app $app_name --label apps.tanzu.vmware.com/has-tests=true --param-yaml testing_pipeline_matching_labels='{\"apps.tanzu.vmware.com/pipeline\": \"ootb-supply-chain-testing-scanning\"}' --yes"
+pe "tanzu apps workload create $app_name --git-repo $git_repo --sub-path $sub_path --git-branch main --type web --label app.kubernetes.io/part-of=$app_name --yes"
 echo
 
 pe "clear"
@@ -93,12 +82,6 @@ pe "tanzu apps workload get $app_name"
 echo
 
 echo http://$app_name.default.full.tap.nycpivot.com
-echo
-
-pe "tanzu insight image get --digest DIGEST"
-echo
-
-pe "tanzu insight image vulnerabilities --digest DIGEST"
 echo
 
 echo https://tap-gui.full.tap.nycpivot.com/supply-chain/host/default/$app_name

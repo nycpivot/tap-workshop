@@ -54,6 +54,8 @@ workloads_msg=$(tanzu apps workload list)
 if [[ $workloads_msg != "No workloads found." ]]
 then
     pe "tanzu apps workload delete $app_name --yes"
+    echo
+    
     pe "clear"
     echo
 fi
@@ -76,7 +78,7 @@ pe "git push"
 cd $HOME
 echo
 
-pe "tanzu apps workload create $app_name --git-repo $git_repo --sub-path $sub_path --git-branch main --type web --app $app_name --label apps.tanzu.vmware.com/has-tests=true --param-yaml testing_pipeline_matching_labels='{\"apps.tanzu.vmware.com/pipeline\": \"ootb-supply-chain-testing\"}' --yes"
+pe "tanzu apps workload create $app_name --git-repo $git_repo --git-branch main --type web --app $app_name --label apps.tanzu.vmware.com/has-tests=true --param-yaml testing_pipeline_matching_labels='{\"apps.tanzu.vmware.com/pipeline\": \"ootb-supply-chain-testing\"}' --yes"
 echo
 
 pe "clear"
@@ -91,4 +93,7 @@ pe "tanzu apps workload get $app_name"
 echo
 
 echo http://$app_name.default.full.tap.nycpivot.com
+echo
+
+echo https://tap-gui.full.tap.nycpivot.com/supply-chain/host/default/$app_name
 echo

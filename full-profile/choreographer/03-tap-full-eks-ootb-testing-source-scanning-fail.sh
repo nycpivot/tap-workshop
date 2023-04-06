@@ -64,6 +64,9 @@ echo
 echo "<<< UPDATE SUPPLY CHAIN TO OOTB TESTING & SCANNING >>>"
 echo
 
+#DELETE TESTING PACKAGE FIRST
+tanzu package installed delete ootb-supply-chain-testing --namespace tap-install --yes
+
 rm tap-values-full-ootb-testing-scanning.yaml
 cat <<EOF | tee tap-values-full-ootb-testing-scanning.yaml
 registry:
@@ -89,7 +92,8 @@ echo
 tanzu package install ootb-supply-chain-testing-scanning \
   --package-name ootb-supply-chain-testing-scanning.tanzu.vmware.com \
   --version $OOTB_SUPPLY_CHAIN_TESTING_SCANNING_VERSION \
-  --values-file tap-values-full-ootb-testing-scanning.yaml
+  --values-file tap-values-full-ootb-testing-scanning.yaml \
+  -n tap-install
 
 #CONFIGURE DNS NAME WITH ELB IP
 echo

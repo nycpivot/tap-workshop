@@ -11,12 +11,8 @@ export EKS_CLUSTER_NAME=tap-full
 #aws ecr delete-repository --repository-name tap-images --region $AWS_REGION --force
 #aws ecr delete-repository --repository-name tap-build-service --region $AWS_REGION --force
 
-aws ecr delete-repository --repository-name tanzu-application-platform/tanzu-java-web-app-basic-default --region $AWS_REGION --force
-aws ecr delete-repository --repository-name tanzu-application-platform/tanzu-java-web-app-basic-default-bundle --region $AWS_REGION --force
-aws ecr delete-repository --repository-name tanzu-application-platform/tanzu-java-web-app-testing-default --region $AWS_REGION --force
-aws ecr delete-repository --repository-name tanzu-application-platform/tanzu-java-web-app-testing-default-bundle --region $AWS_REGION --force
-aws ecr delete-repository --repository-name tanzu-application-platform/tanzu-java-web-app-testing-scanning-default --region $AWS_REGION --force
-aws ecr delete-repository --repository-name tanzu-application-platform/tanzu-java-web-app-testing-scanning-default-bundle --region $AWS_REGION --force
+aws ecr delete-repository --repository-name tanzu-application-platform/tanzu-java-web-app-default --region $AWS_REGION --force
+aws ecr delete-repository --repository-name tanzu-application-platform/tanzu-java-web-app-default-bundle --region $AWS_REGION --force
 
 eksctl delete cluster --name $EKS_CLUSTER_NAME
 

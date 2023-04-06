@@ -420,5 +420,9 @@ tanzu package repository add tanzu-tap-repository \
 rm -rf tanzu-java-web-app
 git clone https://github.com/nycpivot/tanzu-java-web-app
 
+cd $HOME/tanzu-java-web-app
+git config user.name nycpivot
+git config user.email mijames@vmware.com
+
 #INSTALL OOTB SUPPLY CHAIN - BASIC
 bash $HOME/tap-workshop/full-profile/choreographer/01-tap-full-eks-ootb-basic.sh

@@ -76,7 +76,8 @@ pe "git add ."
 pe "git commit -m 'Created failing test.'"
 pe "git push"
 cd $HOME
-echo
+
+pe "clear"
 
 pe "tanzu apps workload create $app_name --git-repo $git_repo --git-branch main --type web --app $app_name --label apps.tanzu.vmware.com/has-tests=true --param-yaml testing_pipeline_matching_labels='{\"apps.tanzu.vmware.com/pipeline\": \"ootb-supply-chain-testing\"}' --yes"
 echo

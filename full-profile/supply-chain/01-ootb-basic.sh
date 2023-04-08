@@ -128,6 +128,9 @@ echo
 ingress=$(kubectl get svc envoy -n tanzu-system-ingress -o json | jq -r .status.loadBalancer.ingress[].hostname)
 ip_address=$(nslookup $ingress | awk '/^Address:/ {A=$2}; END {print A}')
 
+echo $ingress
+echo $ip_address
+
 rm change-batch.json
 cat <<EOF | tee change-batch.json
 {
@@ -153,6 +156,12 @@ echo
 
 hosted_zone_id=$(aws route53 list-hosted-zones --query HostedZones[0].Id --output text | awk -F '/' '{print $3}')
 aws route53 change-resource-record-sets --hosted-zone-id $hosted_zone_id --change-batch file:///$HOME/change-batch.json
+
+ingress=$(kubectl get svc envoy -n tanzu-system-ingress -o json | jq -r .status.loadBalancer.ingress[].hostname)
+ip_address=$(nslookup $ingress | awk '/^Address:/ {A=$2}; END {print A}')
+
+echo $ingress
+echo $ip_address
 
 echo
 echo http://tap-gui.$FULL_DOMAIN

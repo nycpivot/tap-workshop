@@ -20,6 +20,10 @@ echo
 echo "<<< INSTALLING FULL TAP PROFILE >>>"
 echo
 
+#DELETE TESTING & SCANNING PACKAGE FIRST (IF IT'S THERE)
+tanzu package installed delete ootb-supply-chain-testing --namespace tap-install --yes
+tanzu package installed delete ootb-supply-chain-testing-scanning --namespace tap-install --yes
+
 #INSTALL TAP
 rm tap-values-full-ootb-basic.yaml
 cat <<EOF | tee tap-values-full-ootb-basic.yaml

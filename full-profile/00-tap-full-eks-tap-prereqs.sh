@@ -33,9 +33,9 @@ access_token=$(echo ${token} | jq -r .access_token)
 curl -i -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $access_token" -X GET https://network.pivotal.io/api/v2/authentication
 
 
-# 2. CLOUD FORMATION (VPC, EKS)
+# 2. CREATE CLUSTER
 echo
-echo "<<< RUNNING CLOUDFORMATION TEMPLATE >>>"
+echo "<<< CREATING CLUSTER >>>"
 echo
 
 #eksctl create cluster --name $EKS_CLUSTER_NAME --managed --region $AWS_REGION --instance-types t3.xlarge --version 1.23 --with-oidc -N 3

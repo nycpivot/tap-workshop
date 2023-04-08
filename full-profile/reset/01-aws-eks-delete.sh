@@ -14,7 +14,13 @@ export EKS_CLUSTER_NAME=tap-full
 aws ecr delete-repository --repository-name tanzu-application-platform/tanzu-java-web-app-default --region $AWS_REGION --force
 aws ecr delete-repository --repository-name tanzu-application-platform/tanzu-java-web-app-default-bundle --region $AWS_REGION --force
 
-eksctl delete cluster --name $EKS_CLUSTER_NAME
+aws eks delete-nodegroup --cluster-name $EKS_CLUSTER_NAME --nodegroup-name ${EKS_CLUSTER_NAME}-node-group
+aws eks wait nodegroup-active --cluster-name $EKS_CLUSTER_NAME --nodegroup-name ${EKS_CLUSTER_NAME}-node-group
+
+aws eks delete-cluster --name $EKS_CLUSTER_NAME
+
+
+#eksctl delete cluster --name $EKS_CLUSTER_NAME
 
 rm .kube/config
 

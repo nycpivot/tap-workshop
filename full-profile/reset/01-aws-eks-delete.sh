@@ -2,11 +2,15 @@
 
 export EKS_CLUSTER_NAME=tap-full
 
-#classic_lb=$(aws elb describe-load-balancers | jq -r .LoadBalancerDescriptions[].LoadBalancerName)
-#network_lb=$(aws elbv2 describe-load-balancers | jq -r .LoadBalancers[].LoadBalancerArn)
+classic_lb=$(aws elb describe-load-balancers | jq -r .LoadBalancerDescriptions[].LoadBalancerName)
+network_lb=$(aws elbv2 describe-load-balancers | jq -r .LoadBalancers[].LoadBalancerArn)
 
-#aws elb delete-load-balancer --load-balancer-name $classic_lb
-#aws elbv2 delete-load-balancer --load-balancer-arn $network_lb
+aws elb delete-load-balancer --load-balancer-name $classic_lb
+aws elbv2 delete-load-balancer --load-balancer-arn $network_lb
+
+sleep 10
+
+aws ec2 describe-internet-gateways
 
 #aws ecr delete-repository --repository-name tap-images --region $AWS_REGION --force
 #aws ecr delete-repository --repository-name tap-build-service --region $AWS_REGION --force
@@ -14,13 +18,13 @@ export EKS_CLUSTER_NAME=tap-full
 aws ecr delete-repository --repository-name tanzu-application-platform/tanzu-java-web-app-default --region $AWS_REGION --force
 aws ecr delete-repository --repository-name tanzu-application-platform/tanzu-java-web-app-default-bundle --region $AWS_REGION --force
 
-aws eks delete-nodegroup --cluster-name $EKS_CLUSTER_NAME --nodegroup-name ${EKS_CLUSTER_NAME}-node-group
-aws eks wait nodegroup-active --cluster-name $EKS_CLUSTER_NAME --nodegroup-name ${EKS_CLUSTER_NAME}-node-group
+# aws eks delete-nodegroup --cluster-name $EKS_CLUSTER_NAME --nodegroup-name ${EKS_CLUSTER_NAME}-node-group
+# aws eks wait nodegroup-active --cluster-name $EKS_CLUSTER_NAME --nodegroup-name ${EKS_CLUSTER_NAME}-node-group
 
-aws eks delete-cluster --name $EKS_CLUSTER_NAME
+# aws eks delete-cluster --name $EKS_CLUSTER_NAME
 
 
-#eksctl delete cluster --name $EKS_CLUSTER_NAME
+eksctl delete cluster --name $EKS_CLUSTER_NAME
 
 rm .kube/config
 

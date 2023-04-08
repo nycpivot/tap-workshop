@@ -220,7 +220,6 @@ echo
 
 kubectl apply -f pipeline-testing.yaml
 
-
 echo
 echo http://tap-gui.$FULL_DOMAIN
 echo

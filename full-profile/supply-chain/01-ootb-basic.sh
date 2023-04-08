@@ -21,8 +21,9 @@ echo "<<< INSTALLING FULL TAP PROFILE >>>"
 echo
 
 #DELETE TESTING & SCANNING PACKAGE FIRST (IF IT'S THERE)
-tanzu package installed delete ootb-supply-chain-testing --namespace tap-install --yes
 tanzu package installed delete ootb-supply-chain-testing-scanning --namespace tap-install --yes
+tanzu package installed delete ootb-supply-chain-testing --namespace tap-install --yes
+tanzu package installed delete tap -n tap-install --yes
 
 #INSTALL TAP
 rm tap-values-full-ootb-basic.yaml
@@ -69,7 +70,6 @@ excluded_packages:
   - policy.apps.tanzu.vmware.com
 EOF
 
-tanzu package installed delete tap -n tap-install --yes
 tanzu package install tap -p tap.tanzu.vmware.com -v $TAP_VERSION --values-file tap-values-full-ootb-basic.yaml -n tap-install
 
 sleep 300

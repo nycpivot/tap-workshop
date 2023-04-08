@@ -38,30 +38,30 @@ echo
 echo "<<< CREATING CLUSTER >>>"
 echo
 
-#eksctl create cluster --name $EKS_CLUSTER_NAME --managed --region $AWS_REGION --instance-types t3.xlarge --version 1.23 --with-oidc -N 3
+eksctl create cluster --name $EKS_CLUSTER_NAME --managed --region $AWS_REGION --instance-types t3.xlarge --version 1.23 --with-oidc -N 3
 
-aws eks create-cluster \
-    --name $EKS_CLUSTER_NAME \
-    --region $AWS_REGION \
-    --kubernetes-version 1.23 \
-    --role-arn arn:aws:iam::964978768106:role/vmware-eks-role \
-    --resources-vpc-config subnetIds=subnet-054820597f34b428a,subnet-0153c75f91ed045a8,subnet-04b9bef1f2600ea20
+# aws eks create-cluster \
+#     --name $EKS_CLUSTER_NAME \
+#     --region $AWS_REGION \
+#     --kubernetes-version 1.23 \
+#     --role-arn arn:aws:iam::964978768106:role/vmware-eks-role \
+#     --resources-vpc-config subnetIds=subnet-054820597f34b428a,subnet-0153c75f91ed045a8,subnet-04b9bef1f2600ea20
 
-aws eks wait cluster-active --name $EKS_CLUSTER_NAME
+# aws eks wait cluster-active --name $EKS_CLUSTER_NAME
 
-aws eks create-nodegroup \
-        --cluster-name $EKS_CLUSTER_NAME \
-        --nodegroup-name "${EKS_CLUSTER_NAME}-node-group" \
-        --disk-size 100 \
-        --scaling-config minSize=3,maxSize=3,desiredSize=3 \
-        --subnets "subnet-054820597f34b428a" "subnet-0153c75f91ed045a8" "subnet-04b9bef1f2600ea20" \
-        --instance-types t3.xlarge \
-        --node-role arn:aws:iam::964978768106:role/vmware-nodegroup-role \
-        --kubernetes-version 1.23
+# aws eks create-nodegroup \
+#         --cluster-name $EKS_CLUSTER_NAME \
+#         --nodegroup-name "${EKS_CLUSTER_NAME}-node-group" \
+#         --disk-size 100 \
+#         --scaling-config minSize=3,maxSize=3,desiredSize=3 \
+#         --subnets "subnet-054820597f34b428a" "subnet-0153c75f91ed045a8" "subnet-04b9bef1f2600ea20" \
+#         --instance-types t3.xlarge \
+#         --node-role arn:aws:iam::964978768106:role/vmware-nodegroup-role \
+#         --kubernetes-version 1.23
 		
-aws eks wait nodegroup-active --cluster-name $EKS_CLUSTER_NAME --nodegroup-name ${EKS_CLUSTER_NAME}-node-group
+# aws eks wait nodegroup-active --cluster-name $EKS_CLUSTER_NAME --nodegroup-name ${EKS_CLUSTER_NAME}-node-group
 
-eksctl utils associate-iam-oidc-provider --cluster $EKS_CLUSTER_NAME --approve
+# eksctl utils associate-iam-oidc-provider --cluster $EKS_CLUSTER_NAME --approve
 
 
 rm .kube/config

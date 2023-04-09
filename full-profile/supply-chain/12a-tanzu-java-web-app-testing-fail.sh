@@ -93,8 +93,8 @@ echo
 pe "tanzu apps workload get $app_name"
 echo
 
-echo http://$app_name.default.full.tap.nycpivot.com
+echo "APP URL: " http://$app_name.default.full.tap.nycpivot.com
 echo
 
-echo https://tap-gui.full.tap.nycpivot.com/supply-chain/host/default/$app_name
+echo "TAP-GUI: " https://tap-gui.full.tap.nycpivot.com/supply-chain/host/default/$app_name
 echo

@@ -1,10 +1,10 @@
 #!/bin/bash
 
-FULL_DOMAIN=$(cat /tmp/tap-full-domain)
-
 TAP_VERSION=1.4.2
 GIT_CATALOG_REPOSITORY=tanzu-application-platform
 INSTALL_REGISTRY_HOSTNAME=registry.tanzu.vmware.com
+
+FULL_DOMAIN=$(cat /tmp/tap-full-domain)
 
 # 1. CAPTURE PIVNET SECRETS
 pivnet_password=$(aws secretsmanager get-secret-value --secret-id $PIVNET_USERNAME | jq -r .SecretString | jq -r .\"pivnet_password\")
@@ -21,8 +21,8 @@ echo "<<< INSTALLING FULL TAP PROFILE >>>"
 echo
 
 #DELETE TESTING & SCANNING PACKAGE FIRST (IF IT'S THERE)
-tanzu package installed delete ootb-supply-chain-testing-scanning --namespace tap-install --yes
-tanzu package installed delete ootb-supply-chain-testing --namespace tap-install --yes
+#tanzu package installed delete ootb-supply-chain-testing-scanning --namespace tap-install --yes
+#tanzu package installed delete ootb-supply-chain-testing --namespace tap-install --yes
 tanzu package installed delete tap -n tap-install --yes
 
 #INSTALL TAP
@@ -72,7 +72,10 @@ EOF
 
 tanzu package install tap -p tap.tanzu.vmware.com -v $TAP_VERSION --values-file tap-values-full-ootb-basic.yaml -n tap-install
 
-sleep 300
+echo "Ctrl+C when all packages are reconciled..."
+
+kubectl get pkgi -n tap-install -w
+
 
 # 9. DEVELOPER NAMESPACE
 #https://docs.vmware.com/en/VMware-Tanzu-Application-Platform/1.4/tap/scc-ootb-supply-chain-basic.html
@@ -131,6 +134,8 @@ ip_address=$(nslookup $ingress | awk '/^Address:/ {A=$2}; END {print A}')
 echo $ingress
 echo $ip_address
 
+kubectl get svc envoy -n tanzu-system-ingress -w
+
 rm change-batch.json
 cat <<EOF | tee change-batch.json
 {
@@ -140,11 +145,11 @@ cat <<EOF | tee change-batch.json
             "Action": "UPSERT",
             "ResourceRecordSet": {
                 "Name": "*.$FULL_DOMAIN",
-                "Type": "A",
+                "Type": "CNAME",
                 "TTL": 60,
                 "ResourceRecords": [
                     {
-                        "Value": "$ip_address"
+                        "Value": "$ingress"
                     }
                 ]
             }
@@ -157,14 +162,8 @@ echo
 hosted_zone_id=$(aws route53 list-hosted-zones --query HostedZones[0].Id --output text | awk -F '/' '{print $3}')
 aws route53 change-resource-record-sets --hosted-zone-id $hosted_zone_id --change-batch file:///$HOME/change-batch.json
 
-ingress=$(kubectl get svc envoy -n tanzu-system-ingress -o json | jq -r .status.loadBalancer.ingress[].hostname)
-ip_address=$(nslookup $ingress | awk '/^Address:/ {A=$2}; END {print A}')
-
-echo $ingress
-echo $ip_address
-
 echo
-echo http://tap-gui.$FULL_DOMAIN
+echo "TAP-GUI: " http://tap-gui.$FULL_DOMAIN
 echo
 echo "HAPPY TAP'ING"
 echo

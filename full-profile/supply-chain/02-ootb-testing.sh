@@ -1,10 +1,10 @@
 #!/bin/bash
 
-FULL_DOMAIN=$(cat /tmp/tap-full-domain)
-
 TAP_VERSION=1.4.2
 TARGET_TBS_REPO=tap-build-service
 GIT_CATALOG_REPOSITORY=tanzu-application-platform
+
+FULL_DOMAIN=$(cat /tmp/tap-full-domain)
 
 #INSTALL TAP WITH OOTB TESTING
 echo
@@ -76,11 +76,11 @@ cat <<EOF | tee change-batch.json
             "Action": "UPSERT",
             "ResourceRecordSet": {
                 "Name": "*.$FULL_DOMAIN",
-                "Type": "A",
+                "Type": "CNAME",
                 "TTL": 60,
                 "ResourceRecords": [
                     {
-                        "Value": "$ip_address"
+                        "Value": "$ingress"
                     }
                 ]
             }
@@ -136,7 +136,7 @@ echo
 kubectl apply -f pipeline-testing.yaml
 
 echo
-echo http://tap-gui.$FULL_DOMAIN
+echo "TAP-GUI: " http://tap-gui.$FULL_DOMAIN
 echo
 echo "HAPPY TAP'ING"
 echo

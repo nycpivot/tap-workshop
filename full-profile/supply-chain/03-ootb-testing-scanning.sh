@@ -113,13 +113,10 @@ echo
 echo "<<< UPDATE SUPPLY CHAIN TO OOTB TESTING & SCANNING >>>"
 echo
 
-#DELETE TESTING PACKAGE FIRST
-tanzu package installed delete ootb-supply-chain-testing --namespace tap-install --yes
-
 rm tap-values-full-ootb-testing-scanning.yaml
 cat <<EOF | tee tap-values-full-ootb-testing-scanning.yaml
 registry:
-  server: "964978768106.dkr.ecr.us-east-1.amazonaws.com"
+  server: $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
   repository: "tanzu-application-platform"
 scanning:
   source:
@@ -134,7 +131,7 @@ grype:
   scanner:
     serviceAccount: grype-scanner
     serviceAccountAnnotations:
-      eks.amazonaws.com/role-arn: "arn:aws:iam::964978768106:role/tap-workload"
+      eks.amazonaws.com/role-arn: "arn:aws:iam::$AWS_ACCOUNT_ID:role/tap-workload"
 EOF
 echo
 
@@ -161,11 +158,11 @@ cat <<EOF | tee change-batch.json
             "Action": "UPSERT",
             "ResourceRecordSet": {
                 "Name": "*.$FULL_DOMAIN",
-                "Type": "A",
+                "Type": "CNAME",
                 "TTL": 60,
                 "ResourceRecords": [
                     {
-                        "Value": "$ip_address"
+                        "Value": "$ingress"
                     }
                 ]
             }
@@ -221,7 +218,7 @@ echo
 kubectl apply -f pipeline-testing.yaml
 
 echo
-echo http://tap-gui.$FULL_DOMAIN
+echo "TAP-GUI: " http://tap-gui.$FULL_DOMAIN
 echo
 echo "HAPPY TAP'ING"
 echo

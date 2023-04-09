@@ -78,5 +78,8 @@ echo
 pe "tanzu insight image vulnerabilities --digest DIGEST"
 echo
 
-echo https://tap-gui.full.tap.nycpivot.com/supply-chain/host/default/$app_name
+echo "APP URL: " http://$app_name.default.full.tap.nycpivot.com
+echo
+
+echo "TAP-GUI: " https://tap-gui.full.tap.nycpivot.com/supply-chain/host/default/$app_name
 echo

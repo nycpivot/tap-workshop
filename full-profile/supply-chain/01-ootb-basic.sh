@@ -168,6 +168,8 @@ echo
 hosted_zone_id=$(aws route53 list-hosted-zones --query HostedZones[0].Id --output text | awk -F '/' '{print $3}')
 aws route53 change-resource-record-sets --hosted-zone-id $hosted_zone_id --change-batch file:///$HOME/change-batch.json
 
+tanzu apps cluster-supply-chain list
+
 echo
 echo "TAP-GUI: " http://tap-gui.$FULL_DOMAIN
 echo

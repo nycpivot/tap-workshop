@@ -135,6 +135,8 @@ echo
 
 kubectl apply -f pipeline-testing.yaml
 
+tanzu apps cluster-supply-chain list
+
 echo
 echo "TAP-GUI: " http://tap-gui.$FULL_DOMAIN
 echo

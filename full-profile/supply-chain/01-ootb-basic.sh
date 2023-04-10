@@ -3,6 +3,7 @@
 TAP_VERSION=1.4.2
 GIT_CATALOG_REPOSITORY=tanzu-application-platform
 INSTALL_REGISTRY_HOSTNAME=registry.tanzu.vmware.com
+TARGET_TBS_REPO=tap-build-service
 
 FULL_DOMAIN=$(cat /tmp/tap-full-domain)
 

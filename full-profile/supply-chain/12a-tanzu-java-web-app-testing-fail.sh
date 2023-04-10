@@ -74,7 +74,9 @@ cd $HOME/tanzu-java-web-app
 
 pe "git add ."
 pe "git commit -m 'Created failing test.'"
+echo
 pe "git push"
+echo
 cd $HOME
 
 pe "clear"

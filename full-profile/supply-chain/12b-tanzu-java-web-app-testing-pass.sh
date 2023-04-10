@@ -45,9 +45,12 @@ cd $HOME/tanzu-java-web-app
 
 pe "git add ."
 pe "git commit -m 'Fixed failing test.'"
-pe "git push"
-cd $HOME
 echo
+pe "git push"
+echo
+cd $HOME
+
+pe "clear"
 
 pe "tanzu apps workload list"
 echo

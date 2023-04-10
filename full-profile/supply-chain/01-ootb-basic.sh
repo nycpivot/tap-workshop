@@ -18,18 +18,11 @@ curl -i -H "Accept: application/json" -H "Content-Type: application/json" -H "Au
 
 #RESET AN EXISTING INSTALLATION
 tanzu package installed delete tap -n tap-install --yes
-kubectl delete ns tap-install
 
 # 8. INSTALL FULL TAP PROFILE
 echo
 echo "<<< INSTALLING FULL TAP PROFILE >>>"
 echo
-
-kubectl create ns tap-install
-
-tanzu package repository add tanzu-tap-repository \
-  --url $INSTALL_REGISTRY_HOSTNAME/$INSTALL_REPO:$TAP_VERSION \
-  --namespace tap-install
 
 #GENERATE VALUES
 rm tap-values-full-ootb-basic.yaml

@@ -113,6 +113,8 @@ echo
 echo "<<< UPDATE SUPPLY CHAIN TO OOTB TESTING & SCANNING >>>"
 echo
 
+tanzu package installed delete ootb-supply-chain-testing -n tap-install --yes
+
 rm tap-values-full-ootb-testing-scanning.yaml
 cat <<EOF | tee tap-values-full-ootb-testing-scanning.yaml
 registry:

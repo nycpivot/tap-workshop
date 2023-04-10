@@ -15,17 +15,22 @@ access_token=$(echo ${token} | jq -r .access_token)
 curl -i -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $access_token" -X GET https://network.pivotal.io/api/v2/authentication
 
 
+#RESET AN EXISTING INSTALLATION
+tanzu package installed delete tap -n tap-install --yes
+kubectl delete ns tap-install
+
 # 8. INSTALL FULL TAP PROFILE
 echo
 echo "<<< INSTALLING FULL TAP PROFILE >>>"
 echo
 
-#DELETE TESTING & SCANNING PACKAGE FIRST (IF IT'S THERE)
-#tanzu package installed delete ootb-supply-chain-testing-scanning --namespace tap-install --yes
-#tanzu package installed delete ootb-supply-chain-testing --namespace tap-install --yes
-tanzu package installed delete tap -n tap-install --yes
+kubectl create ns tap-install
 
-#INSTALL TAP
+tanzu package repository add tanzu-tap-repository \
+  --url $INSTALL_REGISTRY_HOSTNAME/$INSTALL_REPO:$TAP_VERSION \
+  --namespace tap-install
+
+#GENERATE VALUES
 rm tap-values-full-ootb-basic.yaml
 cat <<EOF | tee tap-values-full-ootb-basic.yaml
 profile: full
@@ -72,7 +77,7 @@ EOF
 
 tanzu package install tap -p tap.tanzu.vmware.com -v $TAP_VERSION --values-file tap-values-full-ootb-basic.yaml -n tap-install
 
-echo "Ctrl+C when all packages are reconciled..."
+echo "Ctrl+C when all packages have reconciled..."
 
 kubectl get pkgi -n tap-install -w
 
@@ -89,7 +94,8 @@ tanzu secret registry add registry-credentials \
   --password "$INSTALL_REGISTRY_HOSTNAME" \
   --namespace default
 
-cat <<EOF | kubectl -n default apply -f -
+rm rbac-dev.yaml
+cat <<EOF | tee rbac-dev.yaml
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -122,6 +128,8 @@ subjects:
     name: default
 EOF
 
+kubectl apply -f rbac-dev.yaml
+
 
 # 10. CONFIGURE DNS NAME WITH ELB IP
 echo
@@ -131,15 +139,10 @@ echo
 ingress=$(kubectl get svc envoy -n tanzu-system-ingress -o json | jq -r .status.loadBalancer.ingress[].hostname)
 ip_address=$(nslookup $ingress | awk '/^Address:/ {A=$2}; END {print A}')
 
-echo $ingress
-echo $ip_address
-
-kubectl get svc envoy -n tanzu-system-ingress -w
-
 rm change-batch.json
 cat <<EOF | tee change-batch.json
 {
-    "Comment": "Update IP address.",
+    "Comment": "Update record.",
     "Changes": [
         {
             "Action": "UPSERT",

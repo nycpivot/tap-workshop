@@ -64,13 +64,18 @@ echo
 echo "<<< CONFIGURING DNS >>>"
 echo
 
+hosted_zone_id=$(aws route53 list-hosted-zones --query HostedZones[0].Id --output text | awk -F '/' '{print $3}')
 ingress=$(kubectl get svc envoy -n tanzu-system-ingress -o json | jq -r .status.loadBalancer.ingress[].hostname)
-ip_address=$(nslookup $ingress | awk '/^Address:/ {A=$2}; END {print A}')
+#ip_address=$(nslookup $ingress | awk '/^Address:/ {A=$2}; END {print A}')
 
-rm change-batch.json
-cat <<EOF | tee change-batch.json
+echo $ingress
+echo
+
+#rm change-batch.json
+change_batch_filename=change-batch-$RANDOM
+cat <<EOF | tee $change_batch_filename.json
 {
-    "Comment": "Update IP address.",
+    "Comment": "Update record.",
     "Changes": [
         {
             "Action": "UPSERT",
@@ -90,8 +95,10 @@ cat <<EOF | tee change-batch.json
 EOF
 echo
 
-hosted_zone_id=$(aws route53 list-hosted-zones --query HostedZones[0].Id --output text | awk -F '/' '{print $3}')
-aws route53 change-resource-record-sets --hosted-zone-id $hosted_zone_id --change-batch file:///$HOME/change-batch.json
+echo $change_batch_filename.json
+aws route53 change-resource-record-sets --hosted-zone-id $hosted_zone_id --change-batch file:///$HOME/$change_batch_filename.json
+
+tanzu apps cluster-supply-chain list
 
 
 #CREATE TEKTON PIPELINE

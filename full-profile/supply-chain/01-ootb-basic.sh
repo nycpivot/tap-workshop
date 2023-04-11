@@ -61,7 +61,7 @@ metadata_store:
   app_service_type: LoadBalancer
 scanning:
   metadataStore:
-    url: ""
+    url: "metadata-store.$FULL_DOMAIN"
 grype:
   namespace: "default"
   targetImagePullSecret: "registry-credentials"
@@ -130,76 +130,41 @@ echo
 echo "<<< CONFIGURING DNS >>>"
 echo
 
+kubectl get pkgi -n tap-install -w | grep contour
+
 hosted_zone_id=$(aws route53 list-hosted-zones --query HostedZones[0].Id --output text | awk -F '/' '{print $3}')
 ingress=$(kubectl get svc envoy -n tanzu-system-ingress -o json | jq -r .status.loadBalancer.ingress[].hostname)
-ip_address=$(nslookup $ingress | awk '/^Address:/ {A=$2}; END {print A}')
+#ip_address=$(nslookup $ingress | awk '/^Address:/ {A=$2}; END {print A}')
 
-rm delete-record-set.json
-cat <<EOF | tee delete-record-set.json
+echo $ingress
+echo
+
+#rm change-batch.json
+change_batch_filename=change-batch-$RANDOM
+cat <<EOF | tee $change_batch_filename.json
 {
-  "Comment": "Delete record set.",
-  "Changes": [{
-    "Action": "DELETE",
-    "ResourceRecordSet": {
-      "Name": "$FULL_DOMAIN",
-      "Type": "CNAME",
-      "TTL": 60,
-      "ResourceRecords": [
+    "Comment": "Update record.",
+    "Changes": [
         {
-          "Value": "$ingress"
+            "Action": "UPSERT",
+            "ResourceRecordSet": {
+                "Name": "*.$FULL_DOMAIN",
+                "Type": "CNAME",
+                "TTL": 60,
+                "ResourceRecords": [
+                    {
+                        "Value": "$ingress"
+                    }
+                ]
+            }
         }
-      ]
-    }
-  }]
+    ]
 }
 EOF
+echo
 
-aws route53 change-resource-record-sets --hosted-zone-id $hosted_zone_id --change-batch file:///$HOME/delete-record-set.json
-
-rm insert-record-set.json
-cat <<EOF | tee insert-record-set.json
-{
-  "Comment": "Create record set.",
-  "Changes": [{
-    "Action": "CREATE",
-    "ResourceRecordSet": {
-      "Name": "$FULL_DOMAIN",
-      "Type": "CNAME",
-      "TTL": 60,
-      "ResourceRecords": [
-        {
-          "Value": "$ingress"
-        }
-      ]
-    }
-  }]
-}
-EOF
-
-# rm change-batch.json
-# cat <<EOF | tee change-batch.json
-# {
-#     "Comment": "Update record.",
-#     "Changes": [
-#         {
-#             "Action": "UPSERT",
-#             "ResourceRecordSet": {
-#                 "Name": "*.$FULL_DOMAIN",
-#                 "Type": "CNAME",
-#                 "TTL": 60,
-#                 "ResourceRecords": [
-#                     {
-#                         "Value": "$ingress"
-#                     }
-#                 ]
-#             }
-#         }
-#     ]
-# }
-# EOF
-# echo
-
-aws route53 change-resource-record-sets --hosted-zone-id $hosted_zone_id --change-batch file:///$HOME/insert-record-set.json
+echo $change_batch_filename.json
+aws route53 change-resource-record-sets --hosted-zone-id $hosted_zone_id --change-batch file:///$HOME/$change_batch_filename.json
 
 tanzu apps cluster-supply-chain list
 

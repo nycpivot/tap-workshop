@@ -67,7 +67,7 @@ echo
 
 pe "clear"
 
-pe "tanzu apps workload create $app_name --git-repo $git_repo --sub-path $sub_path --git-branch main --type web --label app.kubernetes.io/part-of=$app_name --yes"
+pe "tanzu apps workload create $app_name --git-repo $git_repo --git-branch main --type web --label app.kubernetes.io/part-of=$app_name --yes"
 echo
 
 pe "clear"

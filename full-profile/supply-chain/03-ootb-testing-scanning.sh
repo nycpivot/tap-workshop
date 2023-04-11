@@ -113,8 +113,6 @@ echo
 echo "<<< UPDATE SUPPLY CHAIN TO OOTB TESTING & SCANNING >>>"
 echo
 
-tanzu package installed delete ootb-supply-chain-testing -n tap-install --yes
-
 rm tap-values-full-ootb-testing-scanning.yaml
 cat <<EOF | tee tap-values-full-ootb-testing-scanning.yaml
 registry:
@@ -142,6 +140,7 @@ tanzu package install ootb-supply-chain-testing-scanning \
   --version $OOTB_SUPPLY_CHAIN_TESTING_SCANNING_VERSION \
   --values-file tap-values-full-ootb-testing-scanning.yaml \
   -n tap-install
+
 
 #CONFIGURE DNS NAME WITH ELB IP
 echo
@@ -218,6 +217,8 @@ EOF
 echo
 
 kubectl apply -f pipeline-testing.yaml
+
+tanzu insight config set-target http://localhost:8443
 
 tanzu apps cluster-supply-chain list
 

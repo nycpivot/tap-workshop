@@ -17,6 +17,8 @@ curl -i -H "Accept: application/json" -H "Content-Type: application/json" -H "Au
 
 
 #RESET AN EXISTING INSTALLATION
+tanzu package installed delete ootb-supply-chain-testing-scanning -n tap-install --yes
+tanzu package installed delete ootb-supply-chain-testing -n tap-install --yes
 tanzu package installed delete tap -n tap-install --yes
 
 # 8. INSTALL FULL TAP PROFILE
@@ -73,8 +75,6 @@ tanzu package install tap -p tap.tanzu.vmware.com -v $TAP_VERSION --values-file 
 
 echo "Ctrl+C when all packages have reconciled..."
 
-kubectl get pkgi -n tap-install | grep contour
-
 
 # 9. DEVELOPER NAMESPACE
 #https://docs.vmware.com/en/VMware-Tanzu-Application-Platform/1.4/tap/scc-ootb-supply-chain-basic.html
@@ -130,43 +130,76 @@ echo
 echo "<<< CONFIGURING DNS >>>"
 echo
 
-kubectl get svc envoy -n tanzu-system-ingress
-echo
-
+hosted_zone_id=$(aws route53 list-hosted-zones --query HostedZones[0].Id --output text | awk -F '/' '{print $3}')
 ingress=$(kubectl get svc envoy -n tanzu-system-ingress -o json | jq -r .status.loadBalancer.ingress[].hostname)
 ip_address=$(nslookup $ingress | awk '/^Address:/ {A=$2}; END {print A}')
 
-echo $ingress
-echo
-
-rm change-batch.json
-cat <<EOF | tee change-batch.json
+rm delete-record-set.json
+cat <<EOF | tee delete-record-set.json
 {
-    "Comment": "Update record.",
-    "Changes": [
+  "Comment": "Delete record set.",
+  "Changes": [{
+    "Action": "DELETE",
+    "ResourceRecordSet": {
+      "Name": "$FULL_DOMAIN",
+      "Type": "CNAME",
+      "TTL": 60,
+      "ResourceRecords": [
         {
-            "Action": "UPSERT",
-            "ResourceRecordSet": {
-                "Name": "*.$FULL_DOMAIN",
-                "Type": "CNAME",
-                "TTL": 60,
-                "ResourceRecords": [
-                    {
-                        "Value": "$ingress"
-                    }
-                ]
-            }
+          "Value": "$ingress"
         }
-    ]
+      ]
+    }
+  }]
 }
 EOF
-echo
 
-kubectl get svc envoy -n tanzu-system-ingress
-echo
+aws route53 change-resource-record-sets --hosted-zone-id $hosted_zone_id --change-batch file:///$HOME/delete-record-set.json
 
-hosted_zone_id=$(aws route53 list-hosted-zones --query HostedZones[0].Id --output text | awk -F '/' '{print $3}')
-aws route53 change-resource-record-sets --hosted-zone-id $hosted_zone_id --change-batch file:///$HOME/change-batch.json
+rm insert-record-set.json
+cat <<EOF | tee insert-record-set.json
+{
+  "Comment": "Create record set.",
+  "Changes": [{
+    "Action": "CREATE",
+    "ResourceRecordSet": {
+      "Name": "$FULL_DOMAIN",
+      "Type": "CNAME",
+      "TTL": 60,
+      "ResourceRecords": [
+        {
+          "Value": "$ingress"
+        }
+      ]
+    }
+  }]
+}
+EOF
+
+# rm change-batch.json
+# cat <<EOF | tee change-batch.json
+# {
+#     "Comment": "Update record.",
+#     "Changes": [
+#         {
+#             "Action": "UPSERT",
+#             "ResourceRecordSet": {
+#                 "Name": "*.$FULL_DOMAIN",
+#                 "Type": "CNAME",
+#                 "TTL": 60,
+#                 "ResourceRecords": [
+#                     {
+#                         "Value": "$ingress"
+#                     }
+#                 ]
+#             }
+#         }
+#     ]
+# }
+# EOF
+# echo
+
+aws route53 change-resource-record-sets --hosted-zone-id $hosted_zone_id --change-batch file:///$HOME/insert-record-set.json
 
 tanzu apps cluster-supply-chain list
 

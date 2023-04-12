@@ -72,8 +72,9 @@ excluded_packages:
 EOF
 
 tanzu package install tap -p tap.tanzu.vmware.com -v $TAP_VERSION --values-file tap-values-full-ootb-basic.yaml -n tap-install
+echo
 
-echo "Ctrl+C when all packages have reconciled..."
+echo "<<< Ctrl+C when all packages have reconciled >>>"
 
 
 # 9. DEVELOPER NAMESPACE

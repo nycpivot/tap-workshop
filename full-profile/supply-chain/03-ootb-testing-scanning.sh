@@ -189,6 +189,10 @@ kubectl get secret ingress-cert -n metadata-store -o json | jq -r '.data."ca.crt
 
 tanzu insight config set-target https://metadata-store.$FULL_DOMAIN --ca-cert /tmp/tap-metadata-store.crt
 
+export METADATA_STORE_ACCESS_TOKEN=$(kubectl get secrets metadata-store-read-write-client -n metadata-store -o jsonpath="{.data.token}" | base64 -d)
+
+tanzu insight health
+
 
 #CREATE TEKTON PIPELINE
 kubectl delete -f pipeline-testing.yaml

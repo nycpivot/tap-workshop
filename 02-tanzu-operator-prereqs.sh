@@ -60,11 +60,7 @@ echo cli_pager= >> $HOME/.aws/config
 
 
 #KUBECTL
-wget https://tanzustorage.blob.core.windows.net/tanzu/kubectl-linux-v1.22.5+vmware.1.gz
-gunzip kubectl-linux-v1.22.5+vmware.1.gz
-
-sudo install kubectl-linux-v1.22.5+vmware.1 /usr/local/bin/kubectl
-rm kubectl-linux-v1.22.5+vmware.1
+sudo snap install kubectl --classic
 kubectl version
 
 

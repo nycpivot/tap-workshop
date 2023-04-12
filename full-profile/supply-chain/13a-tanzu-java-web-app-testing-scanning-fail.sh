@@ -81,14 +81,18 @@ echo
 pe "tanzu apps workload get $app_name"
 echo
 
-echo http://$app_name.default.full.tap.nycpivot.com
+pe "kubectl get sourcescan"
 echo
 
-pe "tanzu insight image get --digest DIGEST"
-echo
+# cd $HOME/tanzu-java-web-app
+# commit_id=$(git rev-parse HEAD)
+# cd $HOME
 
-pe "tanzu insight image vulnerabilities --digest DIGEST"
-echo
+# pe "tanzu insight source get --repo $git_repo"
+# echo
+
+# pe "tanzu insight source vulnerabilities --repo $git_repo"
+# echo
 
 echo "APP URL: " http://$app_name.default.full.tap.nycpivot.com
 echo

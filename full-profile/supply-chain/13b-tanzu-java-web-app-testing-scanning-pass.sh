@@ -69,13 +69,15 @@ echo
 pe "tanzu apps workload get $app_name"
 echo
 
-echo http://$app_name.default.full.tap.nycpivot.com
+pe "kubectl get imagescan"
 echo
 
-pe "tanzu insight image get --digest DIGEST"
+digest=$(kubectl get imagescan -o yaml | yq -r ".items[].spec.registry.image" | awk -F '@' '{print $2}')
+
+pe "tanzu insight image get --digest $digest"
 echo
 
-pe "tanzu insight image vulnerabilities --digest DIGEST"
+pe "tanzu insight image vulnerabilities --digest $digest"
 echo
 
 echo "APP URL: " http://$app_name.default.full.tap.nycpivot.com

@@ -1,13 +1,8 @@
 #!/bin/bash
 
-read -p "AWS Account Id: " aws_account_id
 read -p "AWS Access Key Id: " aws_access_key_id
 read -p "AWS Secret Access Key: " aws_secret_access_key
 read -p "AWS Default Region: " aws_region_code
-read -p "Pivnet Username: " pivnet_username
-read -p "Pivnet Password: " pivnet_password
-read -p "Pivnet API Token: " pivnet_token
-read -p "Github CLI Token: " github_token
 
 sudo apt update
 yes | sudo apt upgrade
@@ -71,26 +66,13 @@ chmod +x /usr/local/bin/demo-magic.sh
 
 sudo apt install pv #required for demo-magic
 
+aws_account_id=$(aws secretsmanager get-secret-value --secret-id tap-workshop | jq -r .SecretString | jq -r .\"aws-account-id\")
 
 echo
 echo export AWS_ACCOUNT_ID=$aws_account_id >> .bashrc
 echo
 echo export AWS_REGION=$aws_region_code >> .bashrc
 echo
-echo export PIVNET_USERNAME=$pivnet_username >> .bashrc
-echo
-
-rm secrets.json
-cat <<EOF | tee secrets.json
-{
-    "pivnet_password": "$pivnet_password",
-    "pivnet_token": "$pivnet_token",
-    "github_token": "$github_token
-}
-EOF
-
-aws secretsmanager delete-secret --secret-id $pivnet_username --region $aws_region_code --force-delete-without-recovery
-aws secretsmanager create-secret --name $pivnet_username --secret-string file://secrets.json
 
 echo
 echo "***REBOOTING***"

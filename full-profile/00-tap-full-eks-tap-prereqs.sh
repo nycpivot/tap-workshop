@@ -12,7 +12,7 @@ echo $full_domain > /tmp/tap-full-domain
 
 export EKS_CLUSTER_NAME=tap-full
 export TANZU_CLI_NO_INIT=true
-export TANZU_VERSION=v0.25.4
+export TANZU_VERSION=v0.28.1
 export TAP_VERSION=1.5.0
 
 export TARGET_TBS_REPO=tap-build-service

@@ -362,7 +362,7 @@ tar -xvf $HOME/tanzu-cluster-essentials/$ESSENTIALS_FILENAME -C $HOME/tanzu-clus
 export INSTALL_BUNDLE=registry.tanzu.vmware.com/tanzu-cluster-essentials/cluster-essentials-bundle@sha256:79abddbc3b49b44fc368fede0dab93c266ff7c1fe305e2d555ed52d00361b446
 export INSTALL_REGISTRY_HOSTNAME=registry.tanzu.vmware.com
 export INSTALL_REGISTRY_USERNAME=$PIVNET_USERNAME
-export INSTALL_REGISTRY_PASSWORD=$pivnet_password
+export INSTALL_REGISTRY_PASSWORD=$PIVNET_PASSWORD
 
 cd $HOME/tanzu-cluster-essentials
 
@@ -373,7 +373,7 @@ sudo cp $HOME/tanzu-cluster-essentials/imgpkg /usr/local/bin/imgpkg
 
 cd $HOME
 
-docker login registry.tanzu.vmware.com -u $PIVNET_USERNAME -p $pivnet_password
+docker login registry.tanzu.vmware.com -u $PIVNET_USERNAME -p $PIVNET_PASSWORD
 
 rm $HOME/tanzu/$CLI_FILENAME
 rm $HOME/tanzu-cluster-essentials/$ESSENTIALS_FILENAME

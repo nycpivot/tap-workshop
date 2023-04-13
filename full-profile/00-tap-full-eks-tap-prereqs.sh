@@ -2,15 +2,6 @@
 
 read -p "Full Domain Name: " full_domain
 
-export EKS_CLUSTER_NAME=tap-full
-export TANZU_CLI_NO_INIT=true
-export TANZU_VERSION=v0.25.4
-export TAP_VERSION=1.4.2
-
-export TARGET_TBS_REPO=tap-build-service
-export CLI_FILENAME=tanzu-framework-linux-amd64-v0.25.4.5.tar
-export ESSENTIALS_FILENAME=tanzu-cluster-essentials-linux-amd64-1.4.1.tgz
-
 echo export FULL_DOMAIN=$full_domain >> $HOME/.bashrc
 echo
 
@@ -19,53 +10,35 @@ source $HOME/.bashrc #reload environment variables (still doesn't work in other 
 #create a tmp file for now
 echo $full_domain > /tmp/tap-full-domain
 
+export EKS_CLUSTER_NAME=tap-full
+export TANZU_CLI_NO_INIT=true
+export TANZU_VERSION=v0.25.4
+export TAP_VERSION=1.5.0
 
-# 1. CAPTURE PIVNET SECRETS
-echo
-echo "<<< RETRIEVING SECRETS FOR PIVNET >>>"
-echo
+export TARGET_TBS_REPO=tap-build-service
+export CLI_FILENAME=tanzu-framework-linux-amd64-v0.28.1.1.tar
+export ESSENTIALS_FILENAME=tanzu-cluster-essentials-linux-amd64-1.5.0.tgz
 
-pivnet_password=$(aws secretsmanager get-secret-value --secret-id $PIVNET_USERNAME | jq -r .SecretString | jq -r .\"pivnet_password\")
-pivnet_token=$(aws secretsmanager get-secret-value --secret-id $PIVNET_USERNAME | jq -r .SecretString | jq -r .\"pivnet_token\")
-token=$(curl -X POST https://network.pivotal.io/api/v2/authentication/access_tokens -d '{"refresh_token":"'$pivnet_token'"}')
+export PIVNET_USERNAME=$(aws secretsmanager get-secret-value --secret-id tap-workshop | jq -r .SecretString | jq -r .\"pivnet-username\")
+export PIVNET_PASSWORD=$(aws secretsmanager get-secret-value --secret-id tap-workshop | jq -r .SecretString | jq -r .\"pivnet-password\")
+export PIVNET_TOKEN=$(aws secretsmanager get-secret-value --secret-id tap-workshop | jq -r .SecretString | jq -r .\"pivnet-token\")
+
+token=$(curl -X POST https://network.pivotal.io/api/v2/authentication/access_tokens -d '{"refresh_token":"'$PIVNET_TOKEN'"}')
 access_token=$(echo ${token} | jq -r .access_token)
 
 curl -i -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $access_token" -X GET https://network.pivotal.io/api/v2/authentication
 
 
-# 2. CREATE CLUSTER
+# 1. CREATE CLUSTER
 echo
 echo "<<< CREATING CLUSTER >>>"
 echo
 
 eksctl create cluster --name $EKS_CLUSTER_NAME --managed --region $AWS_REGION --instance-types t3.xlarge --version 1.23 --with-oidc -N 3
 
-# aws eks create-cluster \
-#     --name $EKS_CLUSTER_NAME \
-#     --region $AWS_REGION \
-#     --kubernetes-version 1.23 \
-#     --role-arn arn:aws:iam::964978768106:role/vmware-eks-role \
-#     --resources-vpc-config subnetIds=subnet-054820597f34b428a,subnet-0153c75f91ed045a8,subnet-04b9bef1f2600ea20
-
-# aws eks wait cluster-active --name $EKS_CLUSTER_NAME
-
-# aws eks create-nodegroup \
-#         --cluster-name $EKS_CLUSTER_NAME \
-#         --nodegroup-name "${EKS_CLUSTER_NAME}-node-group" \
-#         --disk-size 100 \
-#         --scaling-config minSize=3,maxSize=3,desiredSize=3 \
-#         --subnets "subnet-054820597f34b428a" "subnet-0153c75f91ed045a8" "subnet-04b9bef1f2600ea20" \
-#         --instance-types t3.xlarge \
-#         --node-role arn:aws:iam::964978768106:role/vmware-nodegroup-role \
-#         --kubernetes-version 1.23
-		
-# aws eks wait nodegroup-active --cluster-name $EKS_CLUSTER_NAME --nodegroup-name ${EKS_CLUSTER_NAME}-node-group
-
-# eksctl utils associate-iam-oidc-provider --cluster $EKS_CLUSTER_NAME --approve
-
-
 rm .kube/config
 
+#configure kubeconfig
 arn=arn:aws:eks:${AWS_REGION}:${AWS_ACCOUNT_ID}:cluster
 
 aws eks update-kubeconfig --name $EKS_CLUSTER_NAME --region $AWS_REGION
@@ -75,7 +48,7 @@ kubectl config rename-context ${arn}/${EKS_CLUSTER_NAME} $EKS_CLUSTER_NAME
 kubectl config use-context $EKS_CLUSTER_NAME
 
 
-# 3. INSTALL CSI PLUGIN (REQUIRED FOR K8S 1.23+)
+# 2. INSTALL CSI PLUGIN (REQUIRED FOR K8S 1.23+)
 echo
 echo "<<< INSTALLING CSI PLUGIN >>>"
 echo
@@ -368,7 +341,7 @@ echo
 rm -rf $HOME/tanzu
 mkdir $HOME/tanzu
 
-wget https://network.pivotal.io/api/v2/products/tanzu-application-platform/releases/1260043/product_files/1433868/download --header="Authorization: Bearer $access_token" -O $HOME/tanzu/$CLI_FILENAME
+wget https://network.pivotal.io/api/v2/products/tanzu-application-platform/releases/1283005/product_files/1446073/download --header="Authorization: Bearer $access_token" -O $HOME/tanzu/$CLI_FILENAME
 tar -xvf $HOME/tanzu/$CLI_FILENAME -C $HOME/tanzu
 
 cd tanzu
@@ -383,10 +356,10 @@ cd $HOME
 rm -rf $HOME/tanzu-cluster-essentials
 mkdir $HOME/tanzu-cluster-essentials
 
-wget https://network.pivotal.io/api/v2/products/tanzu-cluster-essentials/releases/1249982/product_files/1423994/download --header="Authorization: Bearer $access_token" -O $HOME/tanzu-cluster-essentials/$ESSENTIALS_FILENAME
+wget https://network.pivotal.io/api/v2/products/tanzu-cluster-essentials/releases/1275537/product_files/1460876/download --header="Authorization: Bearer $access_token" -O $HOME/tanzu-cluster-essentials/$ESSENTIALS_FILENAME
 tar -xvf $HOME/tanzu-cluster-essentials/$ESSENTIALS_FILENAME -C $HOME/tanzu-cluster-essentials
 
-export INSTALL_BUNDLE=registry.tanzu.vmware.com/tanzu-cluster-essentials/cluster-essentials-bundle@sha256:2354688e46d4bb4060f74fca069513c9b42ffa17a0a6d5b0dbb81ed52242ea44
+export INSTALL_BUNDLE=registry.tanzu.vmware.com/tanzu-cluster-essentials/cluster-essentials-bundle@sha256:79abddbc3b49b44fc368fede0dab93c266ff7c1fe305e2d555ed52d00361b446
 export INSTALL_REGISTRY_HOSTNAME=registry.tanzu.vmware.com
 export INSTALL_REGISTRY_USERNAME=$PIVNET_USERNAME
 export INSTALL_REGISTRY_PASSWORD=$pivnet_password
@@ -443,10 +416,6 @@ tanzu package repository add tanzu-tap-repository \
 #download sample app code
 rm -rf tanzu-java-web-app
 git clone https://github.com/nycpivot/tanzu-java-web-app
-
-cd $HOME/tanzu-java-web-app
-git config user.name nycpivot
-git config user.email mijames@vmware.com
 
 #INSTALL OOTB SUPPLY CHAIN - BASIC
 bash $HOME/tap-workshop/full-profile/supply-chain/01-ootb-basic.sh

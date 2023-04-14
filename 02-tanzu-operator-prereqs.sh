@@ -55,7 +55,7 @@ echo cli_pager= >> $HOME/.aws/config
 
 
 #KUBECTL
-sudo snap install kubectl --classic
+sudo snap install kubectl --classic --channel=1.25/stable
 kubectl version
 
 

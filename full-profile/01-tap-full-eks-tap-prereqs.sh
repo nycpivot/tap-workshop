@@ -3,7 +3,6 @@
 read -p "Full Domain Name: " full_domain
 
 echo export FULL_DOMAIN=$full_domain >> $HOME/.bashrc
-echo
 
 source $HOME/.bashrc #reload environment variables (still doesn't work in other scripts)
 

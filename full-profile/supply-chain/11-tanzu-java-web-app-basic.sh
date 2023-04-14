@@ -54,7 +54,6 @@ workloads_msg=$(tanzu apps workload list)
 if [[ $workloads_msg != "No workloads found." ]]
 then
     pe "tanzu apps workload delete $app_name --yes"
-    echo
 fi
 
 pe "clear"

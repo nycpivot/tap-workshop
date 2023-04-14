@@ -34,7 +34,7 @@ echo
 echo "<<< CREATING CLUSTER >>>"
 echo
 
-eksctl create cluster --name $EKS_CLUSTER_NAME --managed --region $AWS_REGION --instance-types t3.xlarge --version 1.26 --with-oidc -N 3
+eksctl create cluster --name $EKS_CLUSTER_NAME --managed --region $AWS_REGION --instance-types t3.xlarge --version 1.25 --with-oidc -N 3
 
 rm .kube/config
 

@@ -34,7 +34,7 @@ echo
 echo "<<< CREATING CLUSTER >>>"
 echo
 
-eksctl create cluster --name $EKS_CLUSTER_NAME --managed --region $AWS_REGION --instance-types t3.xlarge --version 1.23 --with-oidc -N 3
+eksctl create cluster --name $EKS_CLUSTER_NAME --managed --region $AWS_REGION --instance-types t3.xlarge --version 1.26 --with-oidc -N 3
 
 rm .kube/config
 
@@ -395,6 +395,11 @@ aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --
 if [[ -z $tap_images_ecr ]]
 then
   aws ecr create-repository --repository-name $INSTALL_REPO --region $AWS_REGION --no-cli-pager
+fi
+
+images_count=$(aws ecr describe-images --repository-name $INSTALL_REPO | jq .imageDetails | jq length)
+if [[ $images_count = 0 ]]
+then
   imgpkg copy --concurrency 1 -b registry.tanzu.vmware.com/tanzu-application-platform/tap-packages:$TAP_VERSION --to-repo $INSTALL_REGISTRY_HOSTNAME/$INSTALL_REPO
 fi
 

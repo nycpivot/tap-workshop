@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TAP_VERSION=1.4.2
+TAP_VERSION=1.5.0
 GIT_CATALOG_REPOSITORY=tanzu-application-platform
 INSTALL_REGISTRY_HOSTNAME=registry.tanzu.vmware.com
 TARGET_TBS_REPO=tap-build-service
@@ -73,8 +73,6 @@ EOF
 
 tanzu package install tap -p tap.tanzu.vmware.com -v $TAP_VERSION --values-file tap-values-full-ootb-basic.yaml -n tap-install
 echo
-
-echo "<<< Ctrl+C when all packages have reconciled >>>"
 
 
 # 9. DEVELOPER NAMESPACE

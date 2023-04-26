@@ -42,11 +42,9 @@ buildservice:
   kp_default_repository: $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$TARGET_TBS_REPO
   kp_default_repository_aws_iam_role_arn: "arn:aws:iam::$AWS_ACCOUNT_ID:role/$TARGET_TBS_REPO"
 contour:
-  infrastructure_provider: aws
   envoy:
     service:
-      aws:
-        LBType: nlb
+      type: LoadBalancer
 ootb_templates:
   iaas_auth: true
 tap_gui:
@@ -72,6 +70,7 @@ excluded_packages:
 EOF
 
 tanzu package install tap -p tap.tanzu.vmware.com -v $TAP_VERSION --values-file tap-values-full-ootb-basic.yaml -n tap-install
+#tanzu package install tap -p tap.tanzu.vmware.com -v $TAP_VERSION --values-file tap-values-full-ootb-basic.yaml -n tap-install --poll-timeout 30m0s
 echo
 
 

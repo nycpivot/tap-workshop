@@ -27,7 +27,7 @@ clear
 DEMO_PROMPT="${GREEN}➜ TAP ${CYAN}\W "
 
 app_name=tanzu-java-web-app
-git_repo=https://github.com/nycpivot/tanzu-java-web-app
+git_repo=https://github.com/PeterEltgroth/spring-music/tree/tap1.3 #https://github.com/nycpivot/tanzu-java-web-app
 sub_path=ootb-supply-chain-basic
 
 kubectl config get-contexts

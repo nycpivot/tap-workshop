@@ -333,6 +333,8 @@ rm workload-policy.json
 
 
 # 6. TANZU PREREQS
+# https://docs.vmware.com/en/VMware-Tanzu-Application-Platform/1.5/tap/install-tanzu-cli.html
+# https://network.tanzu.vmware.com/products/tanzu-application-platform#/releases/1287438/file_groups/12507
 echo
 echo "<<< INSTALLING TANZU AND CLUSTER ESSENTIALS >>>"
 echo
@@ -351,7 +353,9 @@ tanzu plugin install --local cli all
 
 cd $HOME
 
-#cluster essentials
+# cluster essentials
+# https://docs.vmware.com/en/Cluster-Essentials-for-VMware-Tanzu/1.5/cluster-essentials/deploy.html
+# https://network.tanzu.vmware.com/products/tanzu-cluster-essentials/
 rm -rf $HOME/tanzu-cluster-essentials
 mkdir $HOME/tanzu-cluster-essentials
 

@@ -54,13 +54,6 @@ echo
 
 rolename=${EKS_CLUSTER_NAME}-csi-driver-role
 
-aws iam detach-role-policy \
-    --role-name ${rolename} \
-    --policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy \
-    --no-cli-pager
-
-aws iam delete-role --role-name ${rolename}
-
 #https://docs.aws.amazon.com/eks/latest/userguide/managing-ebs-csi.html
 aws eks create-addon \
     --cluster-name $EKS_CLUSTER_NAME \
@@ -311,12 +304,6 @@ cat <<EOF > workload-policy.json
     ]
 }
 EOF
-
-aws iam delete-role-policy --role-name tap-build-service --policy-name tapBuildServicePolicy --no-cli-pager
-aws iam delete-role-policy --role-name tap-workload --policy-name tapWorkload --no-cli-pager
-
-aws iam delete-role --role-name tap-build-service --no-cli-pager
-aws iam delete-role --role-name tap-workload --no-cli-pager
 
 # Create the Build Service Role
 aws iam create-role --role-name tap-build-service --assume-role-policy-document file://build-service-trust-policy.json --no-cli-pager

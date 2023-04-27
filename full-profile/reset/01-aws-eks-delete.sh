@@ -1,33 +1,58 @@
 #!/bin/bash
 
-export EKS_CLUSTER_NAME=tap-full
+cluster_name=tap-full
 
+#DELETE IAM CSI DRIVER ROLE
+rolename=$cluster_name-csi-driver-role
+
+aws iam detach-role-policy \
+    --role-name ${rolename} \
+    --policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy \
+    --no-cli-pager
+
+aws iam delete-role --role-name ${rolename}
+
+
+#DELETE IAM ECR ROLES
+aws iam delete-role-policy --role-name tap-build-service --policy-name tapBuildServicePolicy --no-cli-pager
+aws iam delete-role-policy --role-name tap-workload --policy-name tapWorkload --no-cli-pager
+
+aws iam delete-role --role-name tap-build-service --no-cli-pager
+aws iam delete-role --role-name tap-workload --no-cli-pager
+
+
+#DELETE ELBs
 classic_lb=$(aws elb describe-load-balancers | jq -r .LoadBalancerDescriptions[].LoadBalancerName)
 network_lb=$(aws elbv2 describe-load-balancers | jq -r .LoadBalancers[].LoadBalancerArn)
 
 aws elb delete-load-balancer --load-balancer-name $classic_lb
 aws elbv2 delete-load-balancer --load-balancer-arn $network_lb
 
-sleep 10
+sleep 300
 
+
+#DELETE IGWs
 aws ec2 describe-internet-gateways
+
+
+#DELETE ECRs
+aws ecr delete-repository --repository-name tanzu-application-platform/tanzu-java-web-app-default --region $AWS_REGION --force
+aws ecr delete-repository --repository-name tanzu-application-platform/tanzu-java-web-app-default-bundle --region $AWS_REGION --force
 
 #aws ecr delete-repository --repository-name tap-images --region $AWS_REGION --force
 #aws ecr delete-repository --repository-name tap-build-service --region $AWS_REGION --force
 
-aws ecr delete-repository --repository-name tanzu-application-platform/tanzu-java-web-app-default --region $AWS_REGION --force
-aws ecr delete-repository --repository-name tanzu-application-platform/tanzu-java-web-app-default-bundle --region $AWS_REGION --force
 
-# aws eks delete-nodegroup --cluster-name $EKS_CLUSTER_NAME --nodegroup-name ${EKS_CLUSTER_NAME}-node-group
-# aws eks wait nodegroup-active --cluster-name $EKS_CLUSTER_NAME --nodegroup-name ${EKS_CLUSTER_NAME}-node-group
-
-# aws eks delete-cluster --name $EKS_CLUSTER_NAME
+#DELETE VPC
 
 
+#DELETE STACK
 eksctl delete cluster --name $EKS_CLUSTER_NAME
 
 rm .kube/config
 
+
+#--- EXPERIMENTAL ---
 #aws cloudformation delete-stack --stack-name tap-workshop-singlecluster-stack --region $AWS_REGION
 #aws cloudformation wait stack-delete-complete --stack-name tap-workshop-singlecluster-stack --region $AWS_REGION
 

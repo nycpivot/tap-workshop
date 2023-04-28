@@ -67,11 +67,19 @@ cnrs:
   domain_name: $FULL_DOMAIN
 excluded_packages:
   - policy.apps.tanzu.vmware.com
+  - controller.source.apps.tanzu.vmware.com
 EOF
 
 tanzu package install tap -p tap.tanzu.vmware.com -v $TAP_VERSION --values-file tap-values-full-ootb-basic.yaml -n tap-install
 #tanzu package install tap -p tap.tanzu.vmware.com -v $TAP_VERSION --values-file tap-values-full-ootb-basic.yaml -n tap-install --poll-timeout 30m0s
 echo
+
+rm source-controller.values.yaml
+cat <<EOF | tee source-controller-values.yaml
+aws_iam_role_arn: "eks.amazonaws.com/role-arn: arn:aws:iam::964978768106:role/tap-workload"
+EOF
+
+tanzu package install source-controller -p controller.source.apps.tanzu.vmware.com -v 0.7.0 --values-file source-controller-values.yaml -n tap-install
 
 
 # 9. DEVELOPER NAMESPACE

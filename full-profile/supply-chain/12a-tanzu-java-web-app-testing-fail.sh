@@ -86,7 +86,7 @@ echo
 
 pe "clear"
 
-pe "tanzu apps workload tail $app_name --since 10m --timestamp"
+pe "tanzu apps workload tail $app_name --since 1h --timestamp"
 echo
 
 pe "tanzu apps workload list"

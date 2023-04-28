@@ -28,7 +28,7 @@ network_lb=$(aws elbv2 describe-load-balancers | jq -r .LoadBalancers[].LoadBala
 aws elb delete-load-balancer --load-balancer-name $classic_lb
 aws elbv2 delete-load-balancer --load-balancer-arn $network_lb
 
-sleep 300
+sleep 600
 
 
 #DELETE IGWs

@@ -6,14 +6,14 @@ export TARGET_REGISTRY_HOSTNAME=tanzuapplicationplatform.azurecr.io
 
 export TARGET_REGISTRY_PASSWORD=$(aws secretsmanager get-secret-value --secret-id tap-workshop | jq -r .SecretString | jq -r .\"acr-secret\")
 
-export TARGET_TBS_REPO=tap-build-service
+export PIVNET_USERNAME=$(aws secretsmanager get-secret-value --secret-id tap-workshop | jq -r .SecretString | jq -r .\"pivnet-username\")
+export PIVNET_PASSWORD=$(aws secretsmanager get-secret-value --secret-id tap-workshop | jq -r .SecretString | jq -r .\"pivnet-password\")
+export PIVNET_TOKEN=$(aws secretsmanager get-secret-value --secret-id tap-workshop | jq -r .SecretString | jq -r .\"pivnet-token\")
 
+token=$(curl -X POST https://network.pivotal.io/api/v2/authentication/access_tokens -d '{"refresh_token":"'$PIVNET_TOKEN'"}')
+access_token=$(echo ${token} | jq -r .access_token)
 
-
-export INSTALL_REPO=tap-images
-
-
-
+curl -i -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer $access_token" -X GET https://network.pivotal.io/api/v2/authentication
 
 
 # IMPORT TAP IMAGES
@@ -26,8 +26,8 @@ docker login $TARGET_REGISTRY_HOSTNAME -u $TARGET_REGISTRY_USERNAME -p $TARGET_R
 imgpkg copy --concurrency 1 -b registry.tanzu.vmware.com/tanzu-application-platform/tap-packages:${TAP_VERSION} --to-repo ${TARGET_REGISTRY_HOSTNAME}/tap-packages
 
 tanzu secret registry add tap-registry \
-  --username ${INSTALL_REGISTRY_USERNAME} --password ${INSTALL_REGISTRY_PASSWORD} \
-  --server ${INSTALL_REGISTRY_HOSTNAME} \
+  --username ${TARGET_REGISTRY_USERNAME} --password ${TARGET_REGISTRY_PASSWORD} \
+  --server ${TARGET_REGISTRY_HOSTNAME} \
   --export-to-all-namespaces --yes --namespace tap-install
 
 tanzu package repository add tanzu-tap-repository \
